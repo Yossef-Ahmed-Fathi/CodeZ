@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaCog } from "react-icons/fa";
-import YouTubeReel from "./YouTubeReel";
+import YoutubeReel from "./YoutubeReel";
 import UploadVideo from "./UploadVideo";
 import { Spinner } from "react-bootstrap";
 
