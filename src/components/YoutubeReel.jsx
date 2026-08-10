@@ -1,20 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "../lib/supabase";
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../lib/supabase';
 import {
-  FaHeart,
-  FaVolumeUp,
-  FaVolumeMute,
-  FaEye,
-  FaChevronDown,
-  FaMusic,
-  FaPlay,
-  FaPause,
-  FaStepForward,
-  FaStepBackward,
-} from "react-icons/fa";
-import { Spinner } from "react-bootstrap";
+  FaHeart, FaVolumeUp, FaVolumeMute, FaEye,
+  FaChevronDown, FaMusic, FaPlay, FaPause,
+  FaStepForward, FaStepBackward
+} from 'react-icons/fa';
+import { Spinner } from 'react-bootstrap';
 
-const YoutubeReel = ({ video, onEnded, isVisible }) => {
+const YouTubeReel = ({ video, onEnded, isVisible }) => {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
@@ -35,8 +28,9 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(false);
 
-  const username = video.users?.username || "user";
+  const username = video.users?.username || 'user';
 
+  // ===== تأثير الرؤية =====
   useEffect(() => {
     if (!playerRef.current || !playerInitialized.current) return;
     if (isVisible) {
@@ -52,6 +46,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     }
   }, [isVisible]);
 
+  // ===== تحميل YouTube Player =====
   useEffect(() => {
     if (window.YT && window.YT.Player) {
       initPlayer();
@@ -59,12 +54,11 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     }
 
     const loadYouTubeAPI = () => {
-      if (document.querySelector('script[src*="youtube.com/iframe_api"]'))
-        return;
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
+      if (document.querySelector('script[src*="youtube.com/iframe_api"]')) return;
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
       tag.async = true;
-      const firstScriptTag = document.getElementsByTagName("script")[0];
+      const firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     };
 
@@ -93,19 +87,13 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   }, [video.youtube_video_id]);
 
   const initPlayer = () => {
-    if (
-      playerInitialized.current ||
-      !containerRef.current ||
-      !window.YT ||
-      !window.YT.Player
-    )
-      return;
+    if (playerInitialized.current || !containerRef.current || !window.YT || !window.YT.Player) return;
 
     try {
       playerInitialized.current = true;
       playerRef.current = new window.YT.Player(containerRef.current, {
-        height: "100%",
-        width: "100%",
+        height: '100%',
+        width: '100%',
         videoId: video.youtube_video_id,
         playerVars: {
           autoplay: 0,
@@ -127,7 +115,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
         },
       });
     } catch (error) {
-      console.error("Error creating YouTube Player:", error);
+      console.error('Error creating YouTube Player:', error);
       setPlayerError(true);
       setIsLoading(false);
     }
@@ -164,11 +152,12 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   };
 
   const onPlayerError = (error) => {
-    console.error("YouTube Player Error:", error);
+    console.error('YouTube Player Error:', error);
     setPlayerError(true);
     setIsLoading(false);
   };
 
+  // ===== تحديث الوقت كل 500ms =====
   useEffect(() => {
     const interval = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
@@ -180,14 +169,15 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // ===== لايك =====
   useEffect(() => {
     if (!video) return;
     const checkLike = async () => {
       try {
         const { data } = await supabase
-          .from("likes")
-          .select("*")
-          .eq("video_id", video.id)
+          .from('likes')
+          .select('*')
+          .eq('video_id', video.id)
           .single();
         setIsLiked(!!data);
       } catch (error) {}
@@ -195,12 +185,15 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     checkLike();
   }, [video.id]);
 
+  // ===== مشاهدات =====
   useEffect(() => {
     if (hasViewed || !isVisible) return;
     const recordView = async () => {
       try {
-        await supabase.from("views").insert({ video_id: video.id });
-        setViewsCount((prev) => prev + 1);
+        await supabase
+          .from('views')
+          .insert({ video_id: video.id });
+        setViewsCount(prev => prev + 1);
         setHasViewed(true);
       } catch (error) {}
     };
@@ -208,6 +201,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     return () => clearTimeout(timer);
   }, [video.id, hasViewed, isVisible]);
 
+  // ===== دوال التحكم =====
   const handleVideoClick = (e) => {
     e.stopPropagation();
     if (!playerRef.current) return;
@@ -260,12 +254,17 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
 
   const handleLike = async () => {
     if (isLiked) {
-      await supabase.from("likes").delete().eq("video_id", video.id);
-      setLikesCount((prev) => prev - 1);
+      await supabase
+        .from('likes')
+        .delete()
+        .eq('video_id', video.id);
+      setLikesCount(prev => prev - 1);
       setIsLiked(false);
     } else {
-      await supabase.from("likes").insert({ video_id: video.id });
-      setLikesCount((prev) => prev + 1);
+      await supabase
+        .from('likes')
+        .insert({ video_id: video.id });
+      setLikesCount(prev => prev + 1);
       setIsLiked(true);
       setShowFireworks(true);
       setLikeAnimation(true);
@@ -281,7 +280,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     const now = Date.now();
     const timeSinceLastTap = now - lastTap;
     if (timeSinceLastTap < 300 && !isLiked) {
-      setLikesCount((prev) => prev + 1);
+      setLikesCount(prev => prev + 1);
       setIsLiked(true);
       setShowFireworks(true);
       setLikeAnimation(true);
@@ -317,9 +316,10 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   };
 
   const formatTime = (time) => {
+    if (!time || isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -334,23 +334,16 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
     >
       <div className="reel-click-layer" onClick={handleVideoClick} />
 
-      <div className={`reel-controls ${showControls ? "visible" : ""}`}>
+      {/* ===== متحكمات التشغيل ===== */}
+      <div className={`reel-controls ${showControls ? 'visible' : ''}`}>
         <div className="controls-top">
-          <button
-            className="control-btn"
-            onClick={seekBackward}
-            title="Back 5s"
-          >
+          <button className="control-btn" onClick={seekBackward} title="Back 5s">
             <FaStepBackward />
           </button>
           <button className="control-btn play-btn" onClick={handleVideoClick}>
             {isPlaying ? <FaPause /> : <FaPlay />}
           </button>
-          <button
-            className="control-btn"
-            onClick={seekForward}
-            title="Forward 5s"
-          >
+          <button className="control-btn" onClick={seekForward} title="Forward 5s">
             <FaStepForward />
           </button>
         </div>
@@ -363,8 +356,21 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
         </div>
       </div>
 
+      {/* ===== Timeline ===== */}
+      <div className="video-timeline">
+        <div className="timeline-bar">
+          <div className="timeline-fill" style={{ width: `${progress}%` }} />
+          <div className="timeline-dot" style={{ left: `${progress}%` }} />
+        </div>
+        <div className="timeline-time">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {/* ===== باقي العناصر ===== */}
       {showPlayIndicator && (
-        <div className={`play-indicator ${isPlaying ? "playing" : "paused"}`}>
+        <div className={`play-indicator ${isPlaying ? 'playing' : 'paused'}`}>
           {isPlaying ? (
             <svg viewBox="0 0 24 24" width="48" height="48" fill="white">
               <rect x="6" y="4" width="4" height="16" />
@@ -413,7 +419,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
       <div className="reel-overlay">
         <h5 className="fw-bold">@{username}</h5>
         {video.title && (
-          <h6 className="mb-1 text-light" style={{ fontSize: "0.9rem" }}>
+          <h6 className="mb-1 text-light" style={{ fontSize: '0.9rem' }}>
             {video.title}
           </h6>
         )}
@@ -423,15 +429,11 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
           </p>
         )}
         {video.channel_name && (
-          <small className="text-light opacity-50">
-            📺 {video.channel_name}
-          </small>
+          <small className="text-light opacity-50">📺 {video.channel_name}</small>
         )}
         <div className="music-info">
           <FaMusic className="music-icon" />
-          <span className="music-name">
-            {video.type === "shorts" ? "Shorts" : "Video"}
-          </span>
+          <span className="music-name">{video.type === 'shorts' ? 'Shorts' : 'Video'}</span>
         </div>
       </div>
 
@@ -442,7 +444,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
 
       <div className="side-actions">
         <div className="action-item" onClick={handleLike}>
-          <FaHeart className={isLiked ? "liked" : ""} size={32} />
+          <FaHeart className={isLiked ? 'liked' : ''} size={32} />
           <span>{likesCount}</span>
         </div>
         <div className="action-item">
@@ -457,4 +459,4 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   );
 };
 
-export default YoutubeReel;
+export default YouTubeReel;
