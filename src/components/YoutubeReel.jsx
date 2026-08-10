@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../context/AuthContext";
 import {
   FaHeart,
   FaVolumeUp,
@@ -16,7 +15,6 @@ import {
 import { Spinner } from "react-bootstrap";
 
 const YouTubeReel = ({ video, onEnded, isVisible }) => {
-  const { user } = useAuth();
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
@@ -183,33 +181,32 @@ const YouTubeReel = ({ video, onEnded, isVisible }) => {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!video) return;
     const checkLike = async () => {
-      const { data } = await supabase
-        .from("likes")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("video_id", video.id)
-        .single();
-      setIsLiked(!!data);
+      try {
+        const { data } = await supabase
+          .from("likes")
+          .select("*")
+          .eq("video_id", video.id)
+          .single();
+        setIsLiked(!!data);
+      } catch (error) {}
     };
     checkLike();
-  }, [user, video.id]);
+  }, [video.id]);
 
   useEffect(() => {
-    if (!user || hasViewed || !isVisible) return;
+    if (hasViewed || !isVisible) return;
     const recordView = async () => {
       try {
-        await supabase
-          .from("views")
-          .insert({ user_id: user.id, video_id: video.id });
+        await supabase.from("views").insert({ video_id: video.id });
         setViewsCount((prev) => prev + 1);
         setHasViewed(true);
       } catch (error) {}
     };
     const timer = setTimeout(recordView, 3000);
     return () => clearTimeout(timer);
-  }, [user, video.id, hasViewed, isVisible]);
+  }, [video.id, hasViewed, isVisible]);
 
   const handleVideoClick = (e) => {
     e.stopPropagation();
@@ -262,22 +259,12 @@ const YouTubeReel = ({ video, onEnded, isVisible }) => {
   };
 
   const handleLike = async () => {
-    if (!user) {
-      alert("Please log in first");
-      return;
-    }
     if (isLiked) {
-      await supabase
-        .from("likes")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("video_id", video.id);
+      await supabase.from("likes").delete().eq("video_id", video.id);
       setLikesCount((prev) => prev - 1);
       setIsLiked(false);
     } else {
-      await supabase
-        .from("likes")
-        .insert({ user_id: user.id, video_id: video.id });
+      await supabase.from("likes").insert({ video_id: video.id });
       setLikesCount((prev) => prev + 1);
       setIsLiked(true);
       setShowFireworks(true);

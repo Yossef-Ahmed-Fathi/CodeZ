@@ -1,14 +1,13 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
 
-    <!-- 🔥 PWA Manifest -->
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,28 +16,29 @@
       content="black-translucent"
     />
 
-    <!-- 🔥 Meta Tags للـ SEO -->
-    <title>CodeZ Reels</title>
+    <!-- SEO -->
+    <title>CodeZ - Educational Reels</title>
     <meta
       name="description"
-      content="منصة لمشاهدة فيديوهات تعليمية من يوتيوب بشكل مريح وسهل"
+      content="Educational video platform - Watch educational videos from YouTube in a seamless reel format"
     />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="CodeZ Reels" />
+    <meta property="og:title" content="CodeZ - Educational Reels" />
     <meta
       property="og:description"
-      content="شاهد فيديوهات تعليمية من يوتيوب بشكل مريح"
+      content="Watch educational videos from YouTube in a seamless reel format"
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://codez-reels.vercel.app/" />
+    <meta property="og:url" content="https://codez.vercel.app" />
 
-    <title>CodeZ Reels</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   </head>
   <body>
     <div id="root"></div>
 
-    <!-- 🔥 تسجيل Service Worker -->
+    <!-- Service Worker Registration (for PWA) -->
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker

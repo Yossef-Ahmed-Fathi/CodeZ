@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   FaCheck,
@@ -19,10 +18,9 @@ import {
   FaSave,
   FaTimesCircle,
 } from "react-icons/fa";
-import { Spinner, Form, Button } from "react-bootstrap";
+import { Spinner, Form } from "react-bootstrap";
 
 const AdminPage = () => {
-  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
   const [pendingVideos, setPendingVideos] = useState([]);
@@ -41,14 +39,22 @@ const AdminPage = () => {
     users: 0,
   });
 
-  // Add Shorts Form
   const [newShortLink, setNewShortLink] = useState("");
   const [newShortType, setNewShortType] = useState("shorts");
   const [newShortDescription, setNewShortDescription] = useState("");
   const [addingShort, setAddingShort] = useState(false);
 
-  // Edit Description
   const [editDescription, setEditDescription] = useState("");
+
+  // Check admin login
+  useEffect(() => {
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn") === "true";
+    if (!adminLoggedIn) {
+      navigate("/admin-login");
+      return;
+    }
+    fetchAllData();
+  }, []);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -81,7 +87,7 @@ const AdminPage = () => {
 
       const mergedVideos = (allVideos || []).map((video) => ({
         ...video,
-        users: usersMap[video.user_id] || { username: "مستخدم" },
+        users: usersMap[video.user_id] || { username: "Unknown" },
       }));
 
       const pending = mergedVideos.filter((v) => v.status === "pending");
@@ -99,20 +105,12 @@ const AdminPage = () => {
       setVideos(mergedVideos);
       setPendingVideos(pending);
     } catch (error) {
-      console.error("❌ خطأ:", error);
-      alert("خطأ في تحميل البيانات");
+      console.error("Error:", error);
+      alert("Error loading data");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate("/");
-      return;
-    }
-    fetchAllData();
-  }, [isAdmin]);
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
@@ -126,20 +124,20 @@ const AdminPage = () => {
     e.preventDefault();
     const videoId = extractYoutubeId(newShortLink);
     if (!videoId) {
-      alert("❌ رابط يوتيوب غير صحيح");
+      alert("Invalid YouTube URL");
       return;
     }
 
     setAddingShort(true);
     try {
       const { error } = await supabase.from("videos").insert({
-        user_id: user.id,
+        user_id: "your-admin-user-id-here",
         youtube_video_id: videoId,
-        status: "approved", // يوافق عليها فوراً
+        status: "approved",
         type: newShortType,
         description:
           newShortDescription ||
-          (newShortType === "shorts" ? "📱 Shorts" : "🎬 فيديو"),
+          (newShortType === "shorts" ? "📱 Shorts" : "🎬 Video"),
       });
 
       if (error) throw error;
@@ -149,16 +147,15 @@ const AdminPage = () => {
       setNewShortType("shorts");
       setShowAddModal(false);
       await fetchAllData();
-      alert("✅ تم إضافة المحتوى بنجاح!");
+      alert("✅ Content added successfully!");
     } catch (error) {
-      console.error("❌ خطأ:", error);
-      alert("❌ خطأ: " + error.message);
+      console.error("Error:", error);
+      alert("❌ Error: " + error.message);
     } finally {
       setAddingShort(false);
     }
   };
 
-  // الموافقة على فيديو
   const approveVideo = async (videoId) => {
     setProcessing((prev) => ({ ...prev, [videoId]: "approving" }));
     try {
@@ -167,24 +164,23 @@ const AdminPage = () => {
         .update({
           status: "approved",
           reviewed_at: new Date().toISOString(),
-          admin_notes: "تمت الموافقة",
+          admin_notes: "Approved",
         })
         .eq("id", videoId);
 
       if (error) throw error;
       await fetchAllData();
-      alert("✅ تمت الموافقة على الفيديو!");
+      alert("✅ Video approved!");
     } catch (error) {
-      console.error("❌ خطأ:", error);
-      alert("❌ خطأ في الموافقة");
+      console.error("Error:", error);
+      alert("❌ Error approving");
     } finally {
       setProcessing((prev) => ({ ...prev, [videoId]: undefined }));
     }
   };
 
-  // رفض فيديو
   const rejectVideo = async (videoId) => {
-    const reason = prompt("📝 سبب الرفض (اختياري):");
+    const reason = prompt("Reason for rejection (optional):");
     setProcessing((prev) => ({ ...prev, [videoId]: "rejecting" }));
     try {
       const { error } = await supabase
@@ -192,24 +188,24 @@ const AdminPage = () => {
         .update({
           status: "rejected",
           reviewed_at: new Date().toISOString(),
-          admin_notes: reason || "تم الرفض",
+          admin_notes: reason || "Rejected",
         })
         .eq("id", videoId);
 
       if (error) throw error;
       await fetchAllData();
-      alert("❌ تم رفض الفيديو");
+      alert("❌ Video rejected");
     } catch (error) {
-      console.error("❌ خطأ:", error);
-      alert("❌ خطأ في الرفض");
+      console.error("Error:", error);
+      alert("❌ Error rejecting");
     } finally {
       setProcessing((prev) => ({ ...prev, [videoId]: undefined }));
     }
   };
 
-  // حذف فيديو
   const deleteVideo = async (videoId) => {
-    if (!confirm("⚠️ هل أنت متأكد من حذف هذا الفيديو نهائياً؟")) return;
+    if (!confirm("Are you sure you want to delete this video permanently?"))
+      return;
 
     setProcessing((prev) => ({ ...prev, [videoId]: "deleting" }));
     try {
@@ -220,16 +216,15 @@ const AdminPage = () => {
 
       if (error) throw error;
       await fetchAllData();
-      alert("🗑️ تم حذف الفيديو");
+      alert("🗑️ Video deleted");
     } catch (error) {
-      console.error("❌ خطأ:", error);
-      alert("❌ خطأ في الحذف");
+      console.error("Error:", error);
+      alert("❌ Error deleting");
     } finally {
       setProcessing((prev) => ({ ...prev, [videoId]: undefined }));
     }
   };
 
-  // تعديل الوصف
   const startEditDescription = (video) => {
     setEditingVideo(video.id);
     setEditDescription(video.description || "");
@@ -246,10 +241,10 @@ const AdminPage = () => {
       if (error) throw error;
       await fetchAllData();
       setEditingVideo(null);
-      alert("✅ تم تحديث الوصف");
+      alert("✅ Description updated");
     } catch (error) {
-      console.error("❌ خطأ:", error);
-      alert("❌ خطأ في تحديث الوصف");
+      console.error("Error:", error);
+      alert("❌ Error updating description");
     } finally {
       setProcessing((prev) => ({ ...prev, [videoId]: undefined }));
     }
@@ -262,9 +257,9 @@ const AdminPage = () => {
       rejected: "bg-danger",
     };
     const labels = {
-      pending: "⏳ في الانتظار",
-      approved: "✅ موافق عليه",
-      rejected: "❌ مرفوض",
+      pending: "⏳ Pending",
+      approved: "✅ Approved",
+      rejected: "❌ Rejected",
     };
     return (
       <span className={`badge ${styles[status] || "bg-secondary"}`}>
@@ -277,7 +272,7 @@ const AdminPage = () => {
     return type === "shorts" ? (
       <span className="badge bg-info">📱 Shorts</span>
     ) : (
-      <span className="badge bg-secondary">🎬 فيديو</span>
+      <span className="badge bg-secondary">🎬 Video</span>
     );
   };
 
@@ -301,31 +296,39 @@ const AdminPage = () => {
   const displayVideos =
     activeTab === "pending" ? pendingVideos : getFilteredVideos();
 
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("adminLoggedIn");
+    navigate("/admin-login");
+  };
+
   return (
     <div className="admin-page">
-      {/* Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div className="d-flex align-items-center gap-3">
           <button
             className="btn btn-outline-light btn-sm"
             onClick={() => navigate("/")}
           >
-            <FaArrowLeft /> رجوع
+            <FaArrowLeft /> Back
           </button>
-          <h4 className="mb-0">⚙️ لوحة التحكم</h4>
+          <h4 className="mb-0">⚙️ Admin Panel</h4>
         </div>
         <div className="d-flex gap-2 flex-wrap">
+          <button className="btn btn-danger btn-sm" onClick={handleLogout}>
+            Logout
+          </button>
           <button
             className="btn btn-success btn-sm"
             onClick={() => setShowAddModal(true)}
           >
-            <FaPlus /> إضافة Shorts
+            <FaPlus /> Add Shorts
           </button>
           <button
             className="btn btn-outline-primary btn-sm"
             onClick={fetchAllData}
           >
-            <FaSync /> تحديث
+            <FaSync /> Refresh
           </button>
         </div>
       </div>
@@ -336,28 +339,28 @@ const AdminPage = () => {
           <div className="stat-card">
             <FaVideo className="text-primary" />
             <h3>{stats.total}</h3>
-            <p>إجمالي الفيديوهات</p>
+            <p>Total Videos</p>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="stat-card">
             <FaClock className="text-warning" />
             <h3>{stats.pending}</h3>
-            <p>في الانتظار</p>
+            <p>Pending</p>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="stat-card">
             <FaCheckCircle className="text-success" />
             <h3>{stats.approved}</h3>
-            <p>موافق عليها</p>
+            <p>Approved</p>
           </div>
         </div>
         <div className="col-6 col-md-3">
           <div className="stat-card">
             <FaUsers className="text-info" />
             <h3>{stats.users}</h3>
-            <p>المستخدمين</p>
+            <p>Users</p>
           </div>
         </div>
       </div>
@@ -368,13 +371,13 @@ const AdminPage = () => {
           className={`tab-btn ${activeTab === "pending" ? "btn btn-warning" : "btn btn-outline-secondary"}`}
           onClick={() => setActiveTab("pending")}
         >
-          ⏳ طلبات ({stats.pending})
+          ⏳ Pending ({stats.pending})
         </button>
         <button
           className={`tab-btn ${activeTab === "all" ? "btn btn-primary" : "btn btn-outline-secondary"}`}
           onClick={() => setActiveTab("all")}
         >
-          📋 كل الفيديوهات ({stats.total})
+          📋 All Videos ({stats.total})
         </button>
       </div>
 
@@ -389,7 +392,7 @@ const AdminPage = () => {
             <input
               type="text"
               className="form-control bg-secondary bg-opacity-25 text-white border-0 ps-5"
-              placeholder="بحث..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -400,10 +403,10 @@ const AdminPage = () => {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           >
-            <option value="all">كل الحالات</option>
-            <option value="pending">في الانتظار</option>
-            <option value="approved">موافق عليه</option>
-            <option value="rejected">مرفوض</option>
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
           </Form.Select>
         </div>
       )}
@@ -412,12 +415,12 @@ const AdminPage = () => {
       {loading ? (
         <div className="text-center py-5">
           <Spinner animation="border" variant="light" size="lg" />
-          <p className="mt-3 text-muted">جاري التحميل...</p>
+          <p className="mt-3 text-muted">Loading...</p>
         </div>
       ) : displayVideos.length === 0 ? (
         <div className="text-center py-5">
-          <h5 className="text-success">✅ مفيش فيديوهات</h5>
-          <p className="text-muted">لا توجد فيديوهات في هذه الفئة</p>
+          <h5 className="text-success">✅ No videos</h5>
+          <p className="text-muted">No videos in this category</p>
         </div>
       ) : (
         <div className="row g-3">
@@ -439,7 +442,7 @@ const AdminPage = () => {
 
                 <div className="flex-grow-1 mt-2">
                   <h6 className="mb-1 text-truncate">
-                    @{video.users?.username || "مستخدم"}
+                    @{video.users?.username || "Unknown"}
                   </h6>
                   {editingVideo === video.id ? (
                     <div className="d-flex gap-1">
@@ -448,7 +451,7 @@ const AdminPage = () => {
                         className="form-control form-control-sm bg-dark text-white border-0"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
-                        placeholder="أدخل الوصف"
+                        placeholder="Enter description"
                       />
                       <button
                         className="btn btn-success btn-sm"
@@ -467,18 +470,18 @@ const AdminPage = () => {
                   ) : (
                     <>
                       <p className="small text-muted text-truncate-2 mb-1">
-                        {video.description || "بدون وصف"}
+                        {video.description || "No description"}
                       </p>
                       <button
                         className="btn btn-outline-light btn-sm"
                         onClick={() => startEditDescription(video)}
                       >
-                        <FaEdit /> تعديل الوصف
+                        <FaEdit /> Edit Description
                       </button>
                     </>
                   )}
                   <small className="text-muted d-block text-truncate">
-                    🕐 {new Date(video.created_at).toLocaleDateString("ar")}
+                    🕐 {new Date(video.created_at).toLocaleDateString()}
                   </small>
                   {video.admin_notes && (
                     <small className="text-warning d-block text-truncate">
@@ -499,7 +502,7 @@ const AdminPage = () => {
                           <Spinner animation="border" size="sm" />
                         ) : (
                           <>
-                            <FaCheck /> موافقة
+                            <FaCheck /> Approve
                           </>
                         )}
                       </button>
@@ -512,7 +515,7 @@ const AdminPage = () => {
                           <Spinner animation="border" size="sm" />
                         ) : (
                           <>
-                            <FaTimes /> رفض
+                            <FaTimes /> Reject
                           </>
                         )}
                       </button>
@@ -527,7 +530,7 @@ const AdminPage = () => {
                       )
                     }
                   >
-                    <FaEye /> مشاهدة
+                    <FaEye /> Watch
                   </button>
                   <button
                     className="btn btn-outline-danger btn-sm"
@@ -555,7 +558,7 @@ const AdminPage = () => {
             style={{ maxWidth: "500px", width: "100%" }}
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5>📱 إضافة Shorts</h5>
+              <h5>📱 Add Shorts</h5>
               <button
                 className="btn btn-secondary"
                 onClick={() => setShowAddModal(false)}
@@ -565,7 +568,7 @@ const AdminPage = () => {
             </div>
             <form onSubmit={handleAddShort}>
               <div className="mb-3">
-                <label className="form-label">رابط يوتيوب (Shorts)</label>
+                <label className="form-label">YouTube URL (Shorts)</label>
                 <input
                   type="url"
                   className="form-control bg-secondary bg-opacity-25 text-white border-0"
@@ -576,22 +579,22 @@ const AdminPage = () => {
                 />
               </div>
               <div className="mb-3">
-                <label className="form-label">نوع المحتوى</label>
+                <label className="form-label">Content Type</label>
                 <select
                   className="form-select bg-secondary bg-opacity-25 text-white border-0"
                   value={newShortType}
                   onChange={(e) => setNewShortType(e.target.value)}
                 >
                   <option value="shorts">📱 Shorts</option>
-                  <option value="video">🎬 فيديو عادي</option>
+                  <option value="video">🎬 Regular Video</option>
                 </select>
               </div>
               <div className="mb-3">
-                <label className="form-label">الوصف (اختياري)</label>
+                <label className="form-label">Description (optional)</label>
                 <input
                   type="text"
                   className="form-control bg-secondary bg-opacity-25 text-white border-0"
-                  placeholder="أدخل وصفاً للفيديو"
+                  placeholder="Enter description"
                   value={newShortDescription}
                   onChange={(e) => setNewShortDescription(e.target.value)}
                 />
@@ -601,7 +604,7 @@ const AdminPage = () => {
                 className="btn btn-primary w-100"
                 disabled={addingShort}
               >
-                {addingShort ? "جاري الإضافة..." : "🚀 إضافة Shorts"}
+                {addingShort ? "Adding..." : "🚀 Add Shorts"}
               </button>
             </form>
           </div>

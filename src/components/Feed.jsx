@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaCog } from "react-icons/fa";
-import Reel from "./Reel";
+import YouTubeReel from "./YouTubeReel";
 import UploadVideo from "./UploadVideo";
 import { Spinner } from "react-bootstrap";
 
 const Feed = () => {
-  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +20,9 @@ const Feed = () => {
   const feedRef = useRef(null);
   const observerRef = useRef(null);
   const isFetchingRef = useRef(false);
+
+  // Admin user ID (replace with your admin user ID from Supabase)
+  const ADMIN_USER_ID = "your-admin-user-id-here";
 
   const fetchRandomVideos = useCallback(
     async (count = 5) => {
@@ -88,7 +89,7 @@ const Feed = () => {
 
         const mergedData = videosData.map((video) => ({
           ...video,
-          users: usersMap[video.user_id] || { username: "user" },
+          users: usersMap[video.user_id] || { username: "Admin" },
         }));
 
         setVideos((prev) => [...prev, ...mergedData]);
@@ -195,15 +196,13 @@ const Feed = () => {
   return (
     <div className="App" style={{ background: "#000", height: "100vh" }}>
       <div className="floating-buttons">
-        {isAdmin && (
-          <button
-            className="floating-btn floating-btn-admin"
-            onClick={() => navigate("/admin")}
-            title="Admin Panel"
-          >
-            <FaCog />
-          </button>
-        )}
+        <button
+          className="floating-btn floating-btn-admin"
+          onClick={() => navigate("/admin-login")}
+          title="Admin Panel"
+        >
+          <FaCog />
+        </button>
         <button
           className="floating-btn floating-btn-add"
           onClick={() => setShowUpload(!showUpload)}
@@ -255,7 +254,7 @@ const Feed = () => {
       ) : (
         <div className="feed-container" ref={feedRef}>
           {videos.map((video, index) => (
-            <Reel
+            <YouTubeReel
               key={video.id + "_" + index}
               video={video}
               onEnded={handleVideoEnded}
@@ -272,7 +271,9 @@ const Feed = () => {
           )}
           {!hasMore && videos.length > 0 && (
             <div className="text-center py-4 text-muted">
-              <small>You've watched all videos! Scroll down to refresh.</small>
+              <small>
+                🎬 You've watched all videos! Scroll down to refresh.
+              </small>
             </div>
           )}
         </div>

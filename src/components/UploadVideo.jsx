@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../context/AuthContext";
 import { FaYoutube, FaUpload, FaSpinner } from "react-icons/fa";
 
 const UploadVideo = ({ onUpload }) => {
@@ -8,7 +7,9 @@ const UploadVideo = ({ onUpload }) => {
   const [uploading, setUploading] = useState(false);
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
-  const { user } = useAuth();
+
+  // Admin user ID (replace with your admin user ID from Supabase)
+  const ADMIN_USER_ID = "your-admin-user-id-here";
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
@@ -33,13 +34,11 @@ const UploadVideo = ({ onUpload }) => {
       if (!response.ok) throw new Error("Failed to fetch video info");
       const data = await response.json();
 
-      const description = await fetchVideoDescription(videoId);
-
       setVideoInfo({
         title: data.title || "No title",
         author: data.author_name || "Unknown",
         thumbnail: data.thumbnail_url || "",
-        description: description || "",
+        description: "",
         videoId: videoId,
       });
     } catch (error) {
@@ -56,26 +55,10 @@ const UploadVideo = ({ onUpload }) => {
     }
   };
 
-  const fetchVideoDescription = async (videoId) => {
-    try {
-      const response = await fetch(
-        `https://www.youtube.com/watch?v=${videoId}`,
-      );
-      const html = await response.text();
-      const match = html.match(/"shortDescription":"([^"]+)"/);
-      if (match) {
-        return decodeURIComponent(match[1]);
-      }
-      return "";
-    } catch (error) {
-      return "";
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!youtubeLink || !user) {
-      alert("Please log in first");
+    if (!youtubeLink) {
+      alert("Please enter a YouTube URL");
       return;
     }
 
@@ -92,22 +75,8 @@ const UploadVideo = ({ onUpload }) => {
 
     setUploading(true);
     try {
-      const { data: existingUser } = await supabase
-        .from("users")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-
-      if (!existingUser) {
-        await supabase.from("users").insert({
-          id: user.id,
-          username:
-            user.user_metadata?.username || user.email?.split("@")[0] || "user",
-        });
-      }
-
       const { error } = await supabase.from("videos").insert({
-        user_id: user.id,
+        user_id: ADMIN_USER_ID,
         youtube_video_id: videoId,
         status: "pending",
         type: type,
@@ -122,10 +91,10 @@ const UploadVideo = ({ onUpload }) => {
       setYoutubeLink("");
       setVideoInfo(null);
       onUpload?.();
-      alert("Video added successfully! Waiting for admin approval.");
+      alert("✅ Video added successfully! Waiting for admin approval.");
     } catch (error) {
       console.error("Error:", error);
-      alert("Error: " + error.message);
+      alert("❌ Error: " + error.message);
     } finally {
       setUploading(false);
     }
@@ -143,7 +112,7 @@ const UploadVideo = ({ onUpload }) => {
 
   return (
     <div className="bg-dark p-4 rounded-4 text-white">
-      <h5 className="text-center mb-3">Add YouTube Video</h5>
+      <h5 className="text-center mb-3">📹 Add YouTube Video</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <label className="form-label">YouTube URL</label>
@@ -161,7 +130,7 @@ const UploadVideo = ({ onUpload }) => {
             />
           </div>
           <small className="text-muted d-block mt-1">
-            Video info will be fetched automatically from YouTube
+            💡 Video info will be fetched automatically from YouTube
           </small>
         </div>
 
@@ -186,11 +155,6 @@ const UploadVideo = ({ onUpload }) => {
               <div className="flex-grow-1">
                 <h6 className="mb-1 text-truncate">{videoInfo.title}</h6>
                 <small className="text-muted">📺 {videoInfo.author}</small>
-                {videoInfo.description && (
-                  <p className="small text-muted text-truncate-2 mt-1">
-                    {videoInfo.description}
-                  </p>
-                )}
               </div>
             </div>
           </div>

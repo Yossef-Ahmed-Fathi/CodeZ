@@ -1,60 +1,39 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Feed from "./components/Feed";
 import AdminPage from "./pages/AdminPage";
-import { Spinner } from "react-bootstrap";
+import AdminLogin from "./components/AdminLogin";
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user, loading, isAdmin } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100 bg-black">
-        <Spinner animation="border" variant="light" size="lg" />
-      </div>
-    );
-  }
-
-  if (adminOnly && !isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
+// Helper to check if admin is logged in
+const isAdminLoggedIn = () => {
+  return localStorage.getItem("adminLoggedIn") === "true";
 };
 
-const AppRoutes = () => {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100 bg-black">
-        <Spinner animation="border" variant="light" size="lg" />
-      </div>
-    );
+// Protected Route for Admin
+const AdminRoute = ({ children }) => {
+  if (!isAdminLoggedIn()) {
+    return <Navigate to="/admin-login" replace />;
   }
-
-  return (
-    <Routes>
-      <Route path="/" element={<Feed />} />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute adminOnly>
-            <AdminPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
-  );
+  return children;
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Feed />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
