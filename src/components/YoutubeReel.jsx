@@ -457,4 +457,4 @@ const YouTubeReel = ({ video, onEnded, isVisible }) => {
   );
 };
 
-export default YouTubeReel;
+export default YoutubeReel;
