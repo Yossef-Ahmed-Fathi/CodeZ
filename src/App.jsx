@@ -3,13 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Feed from "./components/Feed";
 import AdminPage from "./pages/AdminPage";
 import AdminLogin from "./components/AdminLogin";
+import VisitCounter from "./components/VisitCounter";
 
-// Helper to check if admin is logged in
 const isAdminLoggedIn = () => {
   return localStorage.getItem("adminLoggedIn") === "true";
 };
 
-// Protected Route for Admin
 const AdminRoute = ({ children }) => {
   if (!isAdminLoggedIn()) {
     return <Navigate to="/admin-login" replace />;
@@ -20,6 +19,7 @@ const AdminRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
+      <VisitCounter /> {/* 👈 هنا عداد الزيارات */}
       <Routes>
         <Route path="/" element={<Feed />} />
         <Route path="/admin-login" element={<AdminLogin />} />
