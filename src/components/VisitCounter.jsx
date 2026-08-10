@@ -98,5 +98,5 @@ const VisitCounter = () => {
     </>
   );
 };
-// Exporting Function
+// Exporting Function for Other Pages
 export default VisitCounter;
