@@ -254,7 +254,7 @@ const Feed = () => {
       ) : (
         <div className="feed-container" ref={feedRef}>
           {videos.map((video, index) => (
-            <YouTubeReel
+            <YoutubeReel
               key={video.id + "_" + index}
               video={video}
               onEnded={handleVideoEnded}

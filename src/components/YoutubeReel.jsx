@@ -14,7 +14,7 @@ import {
 } from "react-icons/fa";
 import { Spinner } from "react-bootstrap";
 
-const YouTubeReel = ({ video, onEnded, isVisible }) => {
+const YoutubeReel = ({ video, onEnded, isVisible }) => {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
