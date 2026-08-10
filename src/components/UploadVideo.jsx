@@ -9,7 +9,7 @@ const UploadVideo = ({ onUpload }) => {
   const [videoInfo, setVideoInfo] = useState(null);
 
   // Admin user ID (replace with your admin user ID from Supabase)
-  const ADMIN_USER_ID = "your-admin-user-id-here";
+  const ADMIN_USER_ID = "681dca92-c909-4db1-8f01-0f9d014e7488";
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
