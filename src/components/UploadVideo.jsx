@@ -1,0 +1,220 @@
+import React, { useState } from "react";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
+import { FaYoutube, FaUpload, FaSpinner } from "react-icons/fa";
+
+const UploadVideo = ({ onUpload }) => {
+  const [youtubeLink, setYoutubeLink] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [fetchingInfo, setFetchingInfo] = useState(false);
+  const [videoInfo, setVideoInfo] = useState(null);
+  const { user } = useAuth();
+
+  const extractYoutubeId = (url) => {
+    if (!url) return null;
+    const regex =
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+
+  const fetchVideoInfo = async (url) => {
+    const videoId = extractYoutubeId(url);
+    if (!videoId) {
+      alert("Invalid YouTube URL");
+      return;
+    }
+
+    setFetchingInfo(true);
+    try {
+      const response = await fetch(
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch video info");
+      const data = await response.json();
+
+      const description = await fetchVideoDescription(videoId);
+
+      setVideoInfo({
+        title: data.title || "No title",
+        author: data.author_name || "Unknown",
+        thumbnail: data.thumbnail_url || "",
+        description: description || "",
+        videoId: videoId,
+      });
+    } catch (error) {
+      console.error("Error fetching video info:", error);
+      setVideoInfo({
+        title: "Educational Video",
+        author: "YouTube",
+        thumbnail: "",
+        description: "",
+        videoId: videoId,
+      });
+    } finally {
+      setFetchingInfo(false);
+    }
+  };
+
+  const fetchVideoDescription = async (videoId) => {
+    try {
+      const response = await fetch(
+        `https://www.youtube.com/watch?v=${videoId}`,
+      );
+      const html = await response.text();
+      const match = html.match(/"shortDescription":"([^"]+)"/);
+      if (match) {
+        return decodeURIComponent(match[1]);
+      }
+      return "";
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!youtubeLink || !user) {
+      alert("Please log in first");
+      return;
+    }
+
+    const videoId = extractYoutubeId(youtubeLink);
+    if (!videoId) {
+      alert("Invalid YouTube URL");
+      return;
+    }
+
+    const type = youtubeLink.includes("/shorts/") ? "shorts" : "video";
+    const title = videoInfo?.title || "Educational Video";
+    const description = videoInfo?.description || "";
+    const channelName = videoInfo?.author || "YouTube";
+
+    setUploading(true);
+    try {
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", user.id)
+        .single();
+
+      if (!existingUser) {
+        await supabase.from("users").insert({
+          id: user.id,
+          username:
+            user.user_metadata?.username || user.email?.split("@")[0] || "user",
+        });
+      }
+
+      const { error } = await supabase.from("videos").insert({
+        user_id: user.id,
+        youtube_video_id: videoId,
+        status: "pending",
+        type: type,
+        description: description || title,
+        title: title,
+        channel_name: channelName,
+        thumbnail: videoInfo?.thumbnail || "",
+      });
+
+      if (error) throw error;
+
+      setYoutubeLink("");
+      setVideoInfo(null);
+      onUpload?.();
+      alert("Video added successfully! Waiting for admin approval.");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLinkChange = (e) => {
+    const url = e.target.value;
+    setYoutubeLink(url);
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      fetchVideoInfo(url);
+    } else {
+      setVideoInfo(null);
+    }
+  };
+
+  return (
+    <div className="bg-dark p-4 rounded-4 text-white">
+      <h5 className="text-center mb-3">Add YouTube Video</h5>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <label className="form-label">YouTube URL</label>
+          <div className="input-group">
+            <span className="input-group-text bg-secondary bg-opacity-25 border-0 text-white">
+              <FaYoutube className="text-danger" />
+            </span>
+            <input
+              type="url"
+              className="form-control bg-secondary bg-opacity-25 text-white border-0"
+              placeholder="https://www.youtube.com/watch?v=... or /shorts/..."
+              value={youtubeLink}
+              onChange={handleLinkChange}
+              required
+            />
+          </div>
+          <small className="text-muted d-block mt-1">
+            Video info will be fetched automatically from YouTube
+          </small>
+        </div>
+
+        {fetchingInfo && (
+          <div className="mb-3 text-center py-2">
+            <FaSpinner className="fa-spin me-2" />
+            <span className="text-muted">Fetching video info...</span>
+          </div>
+        )}
+
+        {videoInfo && !fetchingInfo && (
+          <div className="mb-3 bg-secondary bg-opacity-10 p-3 rounded-3">
+            <div className="d-flex gap-3">
+              {videoInfo.thumbnail && (
+                <img
+                  src={videoInfo.thumbnail}
+                  alt="Thumbnail"
+                  className="rounded"
+                  style={{ width: "80px", height: "60px", objectFit: "cover" }}
+                />
+              )}
+              <div className="flex-grow-1">
+                <h6 className="mb-1 text-truncate">{videoInfo.title}</h6>
+                <small className="text-muted">📺 {videoInfo.author}</small>
+                {videoInfo.description && (
+                  <p className="small text-muted text-truncate-2 mt-1">
+                    {videoInfo.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+          disabled={uploading || fetchingInfo}
+        >
+          {uploading ? (
+            <>
+              <span className="spinner-border spinner-border-sm" />
+              Adding...
+            </>
+          ) : (
+            <>
+              <FaUpload /> Add Video
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default UploadVideo;
