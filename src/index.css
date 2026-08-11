@@ -176,20 +176,22 @@ body {
 /* ============================================
    Side Actions
    ============================================ */
-.side-actions {
-  position: absolute;
-  bottom: 8rem;
-  right: clamp(0.5rem, 2vw, 1.5rem);
+/* ============================================
+   Side Actions - Fixed (بره الفيديو)
+   ============================================ */
+.side-actions-fixed {
+  position: fixed;
+  z-index: 99999;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(1rem, 2.5vw, 1.8rem);
+  gap: 1.5rem;
   color: #fff;
-  z-index: 9999;
   pointer-events: auto;
+  transform: translateY(-50%);
 }
 
-.action-item {
+.side-actions-fixed .action-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -205,28 +207,27 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-
-.action-item svg {
+.side-actions-fixed .action-item svg {
   font-size: clamp(1.4rem, 3.5vw, 2.2rem);
   pointer-events: none;
 }
 
-.action-item span {
+.side-actions-fixed .action-item span {
   font-size: clamp(0.6rem, 1.5vw, 0.8rem);
   font-weight: 700;
   margin-top: 2px;
 }
 
-.action-item .liked {
+.side-actions-fixed .action-item .liked {
   color: #ff2d55;
 }
 
-.action-item:hover {
+.side-actions-fixed .action-item:hover {
   transform: scale(1.1);
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
 }
 
-.action-item:active {
+.side-actions-fixed .action-item:active {
   transform: scale(0.9);
 }
 
