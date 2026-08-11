@@ -31,23 +31,37 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
 
   const username = video.users?.username || 'user';
 
-  // تحديث position حق الأزرار حسب scroll
+  // ===== تحديث موضع الأزرار =====
   useEffect(() => {
     const updatePosition = () => {
       if (!containerRef.current || !sideActionsRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      sideActionsRef.current.style.top = rect.top + rect.height - 130 + 'px';
+      const centerY = rect.top + rect.height / 2;
+      sideActionsRef.current.style.top = centerY + 'px';
       sideActionsRef.current.style.right = '16px';
+      sideActionsRef.current.style.transform = 'translateY(-50%)';
+    };
+
+    // تحديث عند التمرير وتغيير الحجم
+    const handleUpdate = () => {
+      requestAnimationFrame(updatePosition);
     };
 
     updatePosition();
-    window.addEventListener('scroll', updatePosition);
-    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
 
     return () => {
-      window.removeEventListener('scroll', updatePosition);
-      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
     };
+  }, [isVisible]);
+
+  // ===== إظهار/إخفاء الأزرار حسب الرؤية =====
+  useEffect(() => {
+    if (sideActionsRef.current) {
+      sideActionsRef.current.style.display = isVisible ? 'flex' : 'none';
+    }
   }, [isVisible]);
 
   useImperativeHandle(ref, () => ({
@@ -483,7 +497,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       </div>
 
-      {/* ===== الأزرار بره الـ container ===== */}
+      {/* ===== الأزرار بره الـ container - Fixed ===== */}
       <div className="side-actions-fixed" ref={sideActionsRef}>
         <div className="action-item" onClick={handleLike}>
           <FaHeart 
