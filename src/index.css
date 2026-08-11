@@ -157,7 +157,7 @@ body {
   padding: 3rem 1rem 2rem;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
   color: #fff;
-  z-index: 5; /* 🔥 خليها 5 مش 10 عشان الأزرار تبقى فوقها */
+  z-index: 5;
   pointer-events: none;
 }
 
@@ -174,9 +174,6 @@ body {
 }
 
 /* ============================================
-   Side Actions
-   ============================================ */
-/* ============================================
    Side Actions - Fixed (بره الفيديو)
    ============================================ */
 .side-actions-fixed {
@@ -188,7 +185,8 @@ body {
   gap: 1.5rem;
   color: #fff;
   pointer-events: auto;
-  transform: translateY(-50%);
+  transition: top 0.1s ease-out;
+  right: 16px;
 }
 
 .side-actions-fixed .action-item {
@@ -921,5 +919,16 @@ body {
   .video-timeline {
     width: 85%;
     bottom: 50px;
+  }
+  .side-actions-fixed {
+    right: 8px;
+    gap: 1rem;
+  }
+  .side-actions-fixed .action-item {
+    min-width: 40px;
+    padding: 0.3rem 0.2rem;
+  }
+  .side-actions-fixed .action-item svg {
+    font-size: 1.2rem;
   }
 }
