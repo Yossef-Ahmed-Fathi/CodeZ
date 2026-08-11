@@ -8,24 +8,140 @@ import { Spinner } from 'react-bootstrap';
 
 const Feed = () => {
   const navigate = useNavigate();
-  const [videos, setVideos] = useState([]);
+  const [allVideos, setAllVideos] = useState([]);
+  const [displayedVideos, setDisplayedVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
   const [hasMore, setHasMore] = useState(true);
-  const [allVideoIds, setAllVideoIds] = useState([]);
-  const [usedVideoIds, setUsedVideoIds] = useState(new Set());
   const [visibleIndex, setVisibleIndex] = useState(0);
+  const [page, setPage] = useState(1);
   const feedRef = useRef(null);
   const observerRef = useRef(null);
-  const isFetchingRef = useRef(false);
   const videoRefs = useRef([]);
+  
+  const ITEMS_PER_PAGE = 5; // عدد الفيديوهات في كل دفعة
 
-  const ADMIN_USER_ID = 'your-admin-user-id-here';
+  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
-  // 🔥 Number of videos to load each time
-  const LOAD_COUNT = 3;
+  // ===== جلب كل الفيديوهات =====
+  const fetchAllVideos = useCallback(async () => {
+    setLoading(true);
+    try {
+      // 1. جلب كل الفيديوهات الموافق عليها
+      const { data: videosData, error: videosError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('status', 'approved');
+
+      if (videosError) throw videosError;
+
+      if (!videosData || videosData.length === 0) {
+        setAllVideos([]);
+        setDisplayedVideos([]);
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
+      // 2. جلب أسماء المستخدمين
+      const userIds = [...new Set(videosData.map(v => v.user_id).filter(id => id))];
+      let usersMap = {};
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, username')
+          .in('id', userIds);
+        if (usersData) {
+          usersMap = usersData.reduce((acc, u) => {
+            acc[u.id] = u;
+            return acc;
+          }, {});
+        }
+      }
+
+      // 3. دمج البيانات
+      const mergedData = videosData.map(video => ({
+        ...video,
+        users: usersMap[video.user_id] || { username: 'Admin' }
+      }));
+
+      // 4. ترتيب عشوائي (مرة واحدة فقط)
+      const shuffled = mergedData.sort(() => Math.random() - 0.5);
+      
+      setAllVideos(shuffled);
+      
+      // 5. عرض أول دفعة
+      const initialBatch = shuffled.slice(0, ITEMS_PER_PAGE);
+      setDisplayedVideos(initialBatch);
+      setPage(1);
+      setHasMore(shuffled.length > ITEMS_PER_PAGE);
+
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      setError('Failed to load videos');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ===== تحميل الدفعة التالية =====
+  const loadMoreVideos = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    
+    // محاكاة تأخير بسيط عشان用户体验 أحسن
+    setTimeout(() => {
+      const nextPage = page + 1;
+      const startIndex = (nextPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      const nextBatch = allVideos.slice(startIndex, endIndex);
+      
+      if (nextBatch.length === 0) {
+        setHasMore(false);
+        setLoadingMore(false);
+        return;
+      }
+      
+      setDisplayedVideos(prev => [...prev, ...nextBatch]);
+      setPage(nextPage);
+      setHasMore(endIndex < allVideos.length);
+      setLoadingMore(false);
+    }, 300);
+  }, [allVideos, page, hasMore, loadingMore]);
+
+  // التحميل الأولي
+  useEffect(() => {
+    fetchAllVideos();
+  }, []);
+
+  // مراقبة التمرير (Infinite Scroll)
+  useEffect(() => {
+    if (loading || loadingMore || !hasMore || displayedVideos.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          loadMoreVideos();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const lastElement = document.querySelector('.reel-item:last-child');
+    if (lastElement) {
+      observer.observe(lastElement);
+      observerRef.current = observer;
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [displayedVideos, loading, loadingMore, hasMore, loadMoreVideos]);
 
   // ===== Keyboard Controls =====
   useEffect(() => {
@@ -43,7 +159,7 @@ const Feed = () => {
       }
 
       if (e.key === 'ArrowDown') {
-        const nextIndex = Math.min(visibleIndex + 1, videos.length - 1);
+        const nextIndex = Math.min(visibleIndex + 1, displayedVideos.length - 1);
         if (nextIndex !== visibleIndex) {
           scrollToIndex(nextIndex);
         }
@@ -61,7 +177,7 @@ const Feed = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [visibleIndex, videos.length]);
+  }, [visibleIndex, displayedVideos.length]);
 
   const scrollToIndex = (index) => {
     const container = feedRef.current;
@@ -74,106 +190,9 @@ const Feed = () => {
     }
   };
 
-  // ===== Fetch Random Videos =====
-  const fetchRandomVideos = useCallback(async (count = LOAD_COUNT) => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setLoadingMore(true);
-
-    try {
-      let availableIds = allVideoIds;
-      if (availableIds.length === 0) {
-        const { data, error } = await supabase
-          .from('videos')
-          .select('id')
-          .eq('status', 'approved');
-
-        if (error) throw error;
-        availableIds = data.map(v => v.id);
-        setAllVideoIds(availableIds);
-        console.log('📹 Total videos available:', availableIds.length);
-      }
-
-      const unusedIds = availableIds.filter(id => !usedVideoIds.has(id));
-      console.log('📹 Unused videos:', unusedIds.length);
-
-      if (unusedIds.length === 0) {
-        console.log('🔄 All videos watched, resetting...');
-        setUsedVideoIds(new Set());
-        setHasMore(true);
-        setLoadingMore(false);
-        isFetchingRef.current = false;
-        setTimeout(() => fetchRandomVideos(count), 500);
-        return;
-      }
-
-      const shuffled = unusedIds.sort(() => Math.random() - 0.5);
-      const selectedIds = shuffled.slice(0, Math.min(count, shuffled.length));
-      console.log('🎲 Selected random IDs:', selectedIds);
-
-      const { data: videosData, error: videosError } = await supabase
-        .from('videos')
-        .select('*')
-        .in('id', selectedIds);
-
-      if (videosError) throw videosError;
-
-      if (!videosData || videosData.length === 0) {
-        setHasMore(false);
-        setLoadingMore(false);
-        isFetchingRef.current = false;
-        return;
-      }
-
-      const userIds = [...new Set(videosData.map(v => v.user_id).filter(id => id))];
-      let usersMap = {};
-      if (userIds.length > 0) {
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('id, username')
-          .in('id', userIds);
-        if (usersData) {
-          usersMap = usersData.reduce((acc, u) => {
-            acc[u.id] = u;
-            return acc;
-          }, {});
-        }
-      }
-
-      const mergedData = videosData.map(video => ({
-        ...video,
-        users: usersMap[video.user_id] || { username: 'Admin' }
-      }));
-
-      setVideos(prev => [...prev, ...mergedData]);
-      const newIds = new Set(usedVideoIds);
-      mergedData.forEach(v => newIds.add(v.id));
-      setUsedVideoIds(newIds);
-
-      setHasMore(selectedIds.length === count);
-
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Failed to load videos');
-    } finally {
-      setLoadingMore(false);
-      isFetchingRef.current = false;
-    }
-  }, [allVideoIds, usedVideoIds]);
-
-  // ===== Initial Load =====
+  // ===== مراقبة الفيديو الظاهر =====
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await fetchRandomVideos(LOAD_COUNT);
-      setLoading(false);
-    };
-    init();
-  }, []);
-
-  // ===== Visibility Detection (Scroll) =====
-  useEffect(() => {
-    if (loading || videos.length === 0) return;
+    if (loading || displayedVideos.length === 0) return;
 
     const container = feedRef.current;
     if (!container) return;
@@ -209,45 +228,15 @@ const Feed = () => {
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
-  }, [videos, loading]);
+  }, [displayedVideos, loading]);
 
-  // ===== Infinite Scroll =====
-  useEffect(() => {
-    if (loading || loadingMore || !hasMore || videos.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && hasMore) {
-          console.log('🔄 Loading more videos...');
-          fetchRandomVideos(LOAD_COUNT);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const lastElement = document.querySelector('.reel-item:last-child');
-    if (lastElement) {
-      observer.observe(lastElement);
-      observerRef.current = observer;
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [videos, loading, loadingMore, hasMore, fetchRandomVideos]);
-
-  // ===== Video Ended Handler =====
+  // ===== عند انتهاء الفيديو =====
   const handleVideoEnded = (videoId) => {
-    console.log('🎬 Video ended:', videoId);
-    setVideos(prev => {
-      const filtered = prev.filter(v => v.id !== videoId);
-      if (filtered.length < 3) {
-        fetchRandomVideos(LOAD_COUNT);
-      }
-      return filtered;
-    });
+    // نحرك للفيديو اللي بعده تلقائياً
+    const nextIndex = Math.min(visibleIndex + 1, displayedVideos.length - 1);
+    if (nextIndex !== visibleIndex) {
+      setTimeout(() => scrollToIndex(nextIndex), 500);
+    }
   };
 
   return (
@@ -273,10 +262,7 @@ const Feed = () => {
         <div className="position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-75 d-flex align-items-center justify-content-center p-3 z-2">
           <div className="upload-modal">
             <UploadVideo onUpload={() => {
-              setAllVideoIds([]);
-              setUsedVideoIds(new Set());
-              setVideos([]);
-              fetchRandomVideos(LOAD_COUNT);
+              fetchAllVideos();
               setShowUpload(false);
             }} />
             <button
@@ -299,7 +285,7 @@ const Feed = () => {
         <div className="d-flex justify-content-center align-items-center vh-100">
           <Spinner animation="border" variant="light" size="lg" />
         </div>
-      ) : videos.length === 0 ? (
+      ) : displayedVideos.length === 0 ? (
         <div className="d-flex justify-content-center align-items-center vh-100 text-white">
           <div className="text-center p-4">
             <h3>No videos yet</h3>
@@ -308,7 +294,7 @@ const Feed = () => {
         </div>
       ) : (
         <div className="feed-container" ref={feedRef}>
-          {videos.map((video, index) => (
+          {displayedVideos.map((video, index) => (
             <YoutubeReel
               key={video.id + '_' + index}
               video={video}
@@ -323,9 +309,9 @@ const Feed = () => {
               <span className="text-white ms-2 small">Loading more videos...</span>
             </div>
           )}
-          {!hasMore && videos.length > 0 && (
+          {!hasMore && displayedVideos.length > 0 && (
             <div className="text-center py-4 text-muted">
-              <small>🎬 You've watched all videos! Scroll down to refresh.</small>
+              <small>🎬 You've watched all videos!</small>
             </div>
           )}
         </div>
