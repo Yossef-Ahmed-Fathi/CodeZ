@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
   FaHeart, FaVolumeUp, FaVolumeMute, FaEye,
   FaChevronDown, FaMusic, FaPlay, FaPause,
-  FaStepForward, FaStepBackward
+  FaStepForward, FaStepBackward, FaHeartBroken
 } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 
@@ -50,11 +50,9 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   }));
 
   // ===== Like System =====
-  // 1. Check if user already liked this video
   useEffect(() => {
     const checkLike = async () => {
       try {
-        // استخدام user_id افتراضي (Admin)
         const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
         const { data } = await supabase
           .from('likes')
@@ -68,12 +66,10 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     checkLike();
   }, [video.id]);
 
-  // 2. Handle Like
   const handleLike = async () => {
     const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
     try {
       if (isLiked) {
-        // Unlike
         await supabase
           .from('likes')
           .delete()
@@ -82,13 +78,11 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         setLikesCount(prev => prev - 1);
         setIsLiked(false);
       } else {
-        // Like
         await supabase
           .from('likes')
           .insert({ video_id: video.id, user_id: userId });
         setLikesCount(prev => prev + 1);
         setIsLiked(true);
-        // تأثير الفرح
         setShowFireworks(true);
         setLikeAnimation(true);
         setTimeout(() => {
@@ -108,14 +102,12 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     const recordView = async () => {
       try {
         const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
-        // تسجيل المشاهدة
         await supabase
           .from('views')
           .insert({ video_id: video.id, user_id: userId });
         setViewsCount(prev => prev + 1);
         setHasViewed(true);
         
-        // تحديث عدد المشاهدات في جدول videos (اختياري)
         await supabase
           .from('videos')
           .update({ views_count: viewsCount + 1 })
@@ -317,7 +309,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     } catch (error) {}
   };
 
-  // ===== Double Tap Like =====
   const handleDoubleTap = (e) => {
     e.preventDefault();
     const now = Date.now();
@@ -478,8 +469,9 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         <span>Swipe up</span>
       </div>
 
-      {/* ===== Side Actions (Like + Views) ===== */}
+      {/* ===== Side Actions ===== */}
       <div className="side-actions">
+        {/* Like Button */}
         <div className="action-item" onClick={handleLike}>
           <FaHeart 
             className={isLiked ? 'liked' : ''} 
@@ -488,10 +480,14 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
           />
           <span>{likesCount}</span>
         </div>
+
+        {/* Views */}
         <div className="action-item">
           <FaEye size={26} />
           <span>{viewsCount}</span>
         </div>
+
+        {/* Mute/Unmute */}
         <div className="action-item" onClick={toggleMute}>
           {isMuted ? <FaVolumeMute size={28} /> : <FaVolumeUp size={28} />}
         </div>
