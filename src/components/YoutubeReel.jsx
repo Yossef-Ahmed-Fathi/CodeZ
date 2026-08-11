@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
   FaHeart, FaVolumeUp, FaVolumeMute, FaEye,
   FaChevronDown, FaMusic, FaPlay, FaPause,
-  FaStepForward, FaStepBackward, FaHeartBroken
+  FaStepForward, FaStepBackward
 } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 
@@ -12,13 +12,10 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
 
-  // ===== Like & Views State ===== 
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes_count || 0);
   const [viewsCount, setViewsCount] = useState(video.views_count || 0);
   const [hasViewed, setHasViewed] = useState(false);
-
-  // ===== باقي الـ State =====
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFireworks, setShowFireworks] = useState(false);
@@ -33,7 +30,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
 
   const username = video.users?.username || 'user';
 
-  // ===== Expose handleTogglePlay =====
   useImperativeHandle(ref, () => ({
     handleTogglePlay: () => {
       if (!playerRef.current) return;
@@ -49,7 +45,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     }
   }));
 
-  // ===== Like System =====
+  // Like System
   useEffect(() => {
     const checkLike = async () => {
       try {
@@ -95,7 +91,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     }
   };
 
-  // ===== Views System =====
+  // Views System
   useEffect(() => {
     if (hasViewed || !isVisible) return;
 
@@ -121,7 +117,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     return () => clearTimeout(timer);
   }, [video.id, hasViewed, isVisible, viewsCount]);
 
-  // ===== YouTube Player =====
+  // YouTube Player
   useEffect(() => {
     if (!playerRef.current || !playerInitialized.current) return;
     if (isVisible) {
@@ -258,7 +254,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     return () => clearInterval(interval);
   }, []);
 
-  // ===== Handlers =====
   const handleVideoClick = (e) => {
     e.stopPropagation();
     if (!playerRef.current) return;
@@ -361,7 +356,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     >
       <div className="reel-click-layer" onClick={handleVideoClick} />
 
-      {/* ===== Controls ===== */}
       <div className={`reel-controls ${showControls ? 'visible' : ''}`}>
         <div className="controls-top">
           <button className="control-btn" onClick={seekBackward} title="Back 5s">
@@ -383,7 +377,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       </div>
 
-      {/* ===== Timeline ===== */}
       <div className="video-timeline">
         <div className="timeline-bar">
           <div className="timeline-fill" style={{ width: `${progress}%` }} />
@@ -442,7 +435,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       )}
 
-      {/* ===== Overlay ===== */}
       <div className="reel-overlay">
         <h5 className="fw-bold">@{username}</h5>
         {video.title && (
@@ -470,44 +462,27 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
       </div>
 
       {/* ===== Side Actions ===== */}
-      {/* ===== Side Actions - Test ===== */}
-<div className="side-actions" style={{ 
-  position: 'absolute', 
-  bottom: '8rem', 
-  right: '1.5rem', 
-  display: 'flex', 
-  flexDirection: 'column', 
-  alignItems: 'center', 
-  gap: '1.5rem', 
-  color: '#fff', 
-  zIndex: 99999,
-  pointerEvents: 'auto',
-  backgroundColor: 'rgba(255,0,0,0.3)', /* 🔥 خلفية حمراء للاختبار */
-  padding: '1rem',
-  borderRadius: '12px'
-}}>
-  {/* Like Button */}
-  <div className="action-item" onClick={handleLike} style={{ cursor: 'pointer', textAlign: 'center' }}>
-    <FaHeart 
-      className={isLiked ? 'liked' : ''} 
-      size={32} 
-      style={isLiked ? { color: '#ff2d55' } : { color: 'white' }}
-    />
-    <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>{likesCount}</span>
-  </div>
+      <div className="side-actions">
+        <div className="action-item" onClick={handleLike}>
+          <FaHeart 
+            className={isLiked ? 'liked' : ''} 
+            size={32}
+            style={isLiked ? { color: '#ff2d55' } : {}}
+          />
+          <span>{likesCount}</span>
+        </div>
 
-  {/* Views */}
-  <div className="action-item" style={{ textAlign: 'center' }}>
-    <FaEye size={26} style={{ color: 'white' }} />
-    <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>{viewsCount}</span>
-  </div>
+        <div className="action-item">
+          <FaEye size={26} />
+          <span>{viewsCount}</span>
+        </div>
 
-  {/* Mute/Unmute */}
-  <div className="action-item" onClick={toggleMute} style={{ cursor: 'pointer', textAlign: 'center' }}>
-    {isMuted ? <FaVolumeMute size={28} style={{ color: 'white' }} /> : <FaVolumeUp size={28} style={{ color: 'white' }} />}
-  </div>
-</div> 
-    </div>);
+        <div className="action-item" onClick={toggleMute}>
+          {isMuted ? <FaVolumeMute size={28} /> : <FaVolumeUp size={28} />}
+        </div>
+      </div>
+    </div>
+  );
 });
 
 YoutubeReel.displayName = 'YoutubeReel';
