@@ -1,16 +1,5 @@
-<<<<<<< HEAD
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
-import { supabase } from "../lib/supabase";
-=======
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../lib/supabase';
->>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
 import {
   FaHeart, FaVolumeUp, FaVolumeMute, FaEye,
   FaChevronDown, FaMusic, FaPlay, FaPause,
@@ -41,7 +30,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
 
   const username = video.users?.username || 'user';
 
-<<<<<<< HEAD
   // Expose handleTogglePlay to parent (Feed)
   useImperativeHandle(ref, () => ({
     handleTogglePlay: () => {
@@ -55,12 +43,9 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
           setIsPlaying(true);
         }
       } catch (error) {}
-    },
+    }
   }));
 
-=======
-  // ===== تأثير الرؤية =====
->>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
   useEffect(() => {
     if (!playerRef.current || !playerInitialized.current) return;
     if (isVisible) {
@@ -76,7 +61,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     }
   }, [isVisible]);
 
-  // ===== تحميل YouTube Player =====
   useEffect(() => {
     if (window.YT && window.YT.Player) {
       initPlayer();
@@ -187,7 +171,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     setIsLoading(false);
   };
 
-  // ===== تحديث الوقت كل 500ms =====
   useEffect(() => {
     const interval = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
@@ -199,7 +182,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     return () => clearInterval(interval);
   }, []);
 
-  // ===== لايك =====
   useEffect(() => {
     if (!video) return;
     const checkLike = async () => {
@@ -215,7 +197,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     checkLike();
   }, [video.id]);
 
-  // ===== مشاهدات =====
   useEffect(() => {
     if (hasViewed || !isVisible) return;
     const recordView = async () => {
@@ -231,7 +212,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     return () => clearTimeout(timer);
   }, [video.id, hasViewed, isVisible]);
 
-  // ===== دوال التحكم =====
   const handleVideoClick = (e) => {
     e.stopPropagation();
     if (!playerRef.current) return;
@@ -346,11 +326,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   };
 
   const formatTime = (time) => {
-<<<<<<< HEAD
-    if (!time || isNaN(time)) return "0:00";
-=======
     if (!time || isNaN(time)) return '0:00';
->>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -368,7 +344,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     >
       <div className="reel-click-layer" onClick={handleVideoClick} />
 
-      {/* ===== متحكمات التشغيل ===== */}
       <div className={`reel-controls ${showControls ? 'visible' : ''}`}>
         <div className="controls-top">
           <button className="control-btn" onClick={seekBackward} title="Back 5s">
@@ -390,10 +365,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       </div>
 
-<<<<<<< HEAD
-=======
-      {/* ===== Timeline ===== */}
->>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
       <div className="video-timeline">
         <div className="timeline-bar">
           <div className="timeline-fill" style={{ width: `${progress}%` }} />
@@ -405,10 +376,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       </div>
 
-<<<<<<< HEAD
-=======
-      {/* ===== باقي العناصر ===== */}
->>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
       {showPlayIndicator && (
         <div className={`play-indicator ${isPlaying ? 'playing' : 'paused'}`}>
           {isPlaying ? (
@@ -499,6 +466,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   );
 });
 
-YoutubeReel.displayName = "YoutubeReel";
+YoutubeReel.displayName = 'YoutubeReel';
 
 export default YoutubeReel;
