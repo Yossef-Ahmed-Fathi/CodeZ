@@ -24,15 +24,16 @@ const Feed = () => {
 
   const ADMIN_USER_ID = 'your-admin-user-id-here';
 
+  // 🔥 Number of videos to load each time
+  const LOAD_COUNT = 3;
+
   // ===== Keyboard Controls =====
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // منع التمرير الافتراضي للصفحة
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
       }
 
-      // Space: تشغيل/إيقاف الفيديو الحالي
       if (e.key === ' ') {
         const currentVideo = videoRefs.current[visibleIndex];
         if (currentVideo) {
@@ -41,7 +42,6 @@ const Feed = () => {
         return;
       }
 
-      // ArrowDown: التمرير لأسفل
       if (e.key === 'ArrowDown') {
         const nextIndex = Math.min(visibleIndex + 1, videos.length - 1);
         if (nextIndex !== visibleIndex) {
@@ -50,7 +50,6 @@ const Feed = () => {
         return;
       }
 
-      // ArrowUp: التمرير لأعلى
       if (e.key === 'ArrowUp') {
         const prevIndex = Math.max(visibleIndex - 1, 0);
         if (prevIndex !== visibleIndex) {
@@ -75,8 +74,8 @@ const Feed = () => {
     }
   };
 
-  // ===== باقي الكود (fetchRandomVideos, useEffect, etc.) =====
-  const fetchRandomVideos = useCallback(async (count = 5) => {
+  // ===== Fetch Random Videos =====
+  const fetchRandomVideos = useCallback(async (count = LOAD_COUNT) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     setLoadingMore(true);
@@ -92,11 +91,14 @@ const Feed = () => {
         if (error) throw error;
         availableIds = data.map(v => v.id);
         setAllVideoIds(availableIds);
+        console.log('📹 Total videos available:', availableIds.length);
       }
 
       const unusedIds = availableIds.filter(id => !usedVideoIds.has(id));
+      console.log('📹 Unused videos:', unusedIds.length);
 
       if (unusedIds.length === 0) {
+        console.log('🔄 All videos watched, resetting...');
         setUsedVideoIds(new Set());
         setHasMore(true);
         setLoadingMore(false);
@@ -107,6 +109,7 @@ const Feed = () => {
 
       const shuffled = unusedIds.sort(() => Math.random() - 0.5);
       const selectedIds = shuffled.slice(0, Math.min(count, shuffled.length));
+      console.log('🎲 Selected random IDs:', selectedIds);
 
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
@@ -158,17 +161,17 @@ const Feed = () => {
     }
   }, [allVideoIds, usedVideoIds]);
 
-  // التحميل الأولي
+  // ===== Initial Load =====
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await fetchRandomVideos(5);
+      await fetchRandomVideos(LOAD_COUNT);
       setLoading(false);
     };
     init();
   }, []);
 
-  // مراقبة التمرير
+  // ===== Visibility Detection (Scroll) =====
   useEffect(() => {
     if (loading || videos.length === 0) return;
 
@@ -208,14 +211,15 @@ const Feed = () => {
     };
   }, [videos, loading]);
 
-  // Infinite Scroll
+  // ===== Infinite Scroll =====
   useEffect(() => {
     if (loading || loadingMore || !hasMore || videos.length === 0) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadingMore && hasMore) {
-          fetchRandomVideos(3);
+          console.log('🔄 Loading more videos...');
+          fetchRandomVideos(LOAD_COUNT);
         }
       },
       { threshold: 0.5 }
@@ -234,11 +238,13 @@ const Feed = () => {
     };
   }, [videos, loading, loadingMore, hasMore, fetchRandomVideos]);
 
+  // ===== Video Ended Handler =====
   const handleVideoEnded = (videoId) => {
+    console.log('🎬 Video ended:', videoId);
     setVideos(prev => {
       const filtered = prev.filter(v => v.id !== videoId);
       if (filtered.length < 3) {
-        fetchRandomVideos(3);
+        fetchRandomVideos(LOAD_COUNT);
       }
       return filtered;
     });
@@ -270,7 +276,7 @@ const Feed = () => {
               setAllVideoIds([]);
               setUsedVideoIds(new Set());
               setVideos([]);
-              fetchRandomVideos(5);
+              fetchRandomVideos(LOAD_COUNT);
               setShowUpload(false);
             }} />
             <button
