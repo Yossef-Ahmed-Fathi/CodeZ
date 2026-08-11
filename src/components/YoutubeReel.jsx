@@ -12,7 +12,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
 
-  // ===== Like & Views State =====
+  // ===== Like & Views State ===== 
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes_count || 0);
   const [viewsCount, setViewsCount] = useState(video.views_count || 0);
