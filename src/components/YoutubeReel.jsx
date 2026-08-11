@@ -11,7 +11,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
-  const sideActionsRef = useRef(null);
 
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes_count || 0);
@@ -30,39 +29,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const [showControls, setShowControls] = useState(false);
 
   const username = video.users?.username || 'user';
-
-  // ===== تحديث موضع الأزرار =====
-  useEffect(() => {
-    const updatePosition = () => {
-      if (!containerRef.current || !sideActionsRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
-      sideActionsRef.current.style.top = centerY + 'px';
-      sideActionsRef.current.style.right = '16px';
-      sideActionsRef.current.style.transform = 'translateY(-50%)';
-    };
-
-    // تحديث عند التمرير وتغيير الحجم
-    const handleUpdate = () => {
-      requestAnimationFrame(updatePosition);
-    };
-
-    updatePosition();
-    window.addEventListener('scroll', handleUpdate, true);
-    window.addEventListener('resize', handleUpdate);
-
-    return () => {
-      window.removeEventListener('scroll', handleUpdate, true);
-      window.removeEventListener('resize', handleUpdate);
-    };
-  }, [isVisible]);
-
-  // ===== إظهار/إخفاء الأزرار حسب الرؤية =====
-  useEffect(() => {
-    if (sideActionsRef.current) {
-      sideActionsRef.current.style.display = isVisible ? 'flex' : 'none';
-    }
-  }, [isVisible]);
 
   useImperativeHandle(ref, () => ({
     handleTogglePlay: () => {
@@ -381,124 +347,122 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <>
-      <div
-        className="reel-item"
-        ref={containerRef}
-        onDoubleClick={handleDoubleTap}
-        onMouseEnter={() => setShowControls(true)}
-        onMouseLeave={() => setShowControls(false)}
-      >
-        <div className="reel-click-layer" onClick={handleVideoClick} />
+    <div
+      className="reel-item"
+      ref={containerRef}
+      onDoubleClick={handleDoubleTap}
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+    >
+      <div className="reel-click-layer" onClick={handleVideoClick} />
 
-        <div className={`reel-controls ${showControls ? 'visible' : ''}`}>
-          <div className="controls-top">
-            <button className="control-btn" onClick={seekBackward} title="Back 5s">
-              <FaStepBackward />
-            </button>
-            <button className="control-btn play-btn" onClick={handleVideoClick}>
-              {isPlaying ? <FaPause /> : <FaPlay />}
-            </button>
-            <button className="control-btn" onClick={seekForward} title="Forward 5s">
-              <FaStepForward />
-            </button>
-          </div>
-          <div className="controls-bottom">
-            <span className="time-text">{formatTime(currentTime)}</span>
-            <div className="progress-bar-custom">
-              <div className="progress-fill" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="time-text">{formatTime(duration)}</span>
-          </div>
+      <div className={`reel-controls ${showControls ? 'visible' : ''}`}>
+        <div className="controls-top">
+          <button className="control-btn" onClick={seekBackward} title="Back 5s">
+            <FaStepBackward />
+          </button>
+          <button className="control-btn play-btn" onClick={handleVideoClick}>
+            {isPlaying ? <FaPause /> : <FaPlay />}
+          </button>
+          <button className="control-btn" onClick={seekForward} title="Forward 5s">
+            <FaStepForward />
+          </button>
         </div>
-
-        <div className="video-timeline">
-          <div className="timeline-bar">
-            <div className="timeline-fill" style={{ width: `${progress}%` }} />
-            <div className="timeline-dot" style={{ left: `${progress}%` }} />
+        <div className="controls-bottom">
+          <span className="time-text">{formatTime(currentTime)}</span>
+          <div className="progress-bar-custom">
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
-          <div className="timeline-time">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </div>
-
-        {showPlayIndicator && (
-          <div className={`play-indicator ${isPlaying ? 'playing' : 'paused'}`}>
-            {isPlaying ? (
-              <svg viewBox="0 0 24 24" width="48" height="48" fill="white">
-                <rect x="6" y="4" width="4" height="16" />
-                <rect x="14" y="4" width="4" height="16" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" width="48" height="48" fill="white">
-                <polygon points="5,3 19,12 5,21" />
-              </svg>
-            )}
-          </div>
-        )}
-
-        {isLoading && !playerError && (
-          <div className="loading-overlay">
-            <div className="text-center">
-              <Spinner animation="border" variant="light" size="lg" />
-              <p className="text-white mt-2 small">Loading video...</p>
-            </div>
-          </div>
-        )}
-
-        {playerError && (
-          <div className="loading-overlay">
-            <div className="text-center text-white">
-              <div className="display-1 mb-3">⚠️</div>
-              <h5>Failed to load video</h5>
-              <p className="text-muted small">Please try again</p>
-              <button className="btn btn-light btn-sm mt-2" onClick={handleRetry}>
-                Retry
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showFireworks && (
-          <div className="firework-container">
-            <span className="firework-emoji">❤️</span>
-            <span className="firework-emoji">🔥</span>
-            <span className="firework-emoji">✨</span>
-            <span className="firework-emoji">💖</span>
-            <span className="firework-emoji">⭐</span>
-          </div>
-        )}
-
-        <div className="reel-overlay">
-          <h5 className="fw-bold">@{username}</h5>
-          {video.title && (
-            <h6 className="mb-1 text-light" style={{ fontSize: '0.9rem' }}>
-              {video.title}
-            </h6>
-          )}
-          {video.description && video.description !== video.title && (
-            <p className="mb-0 small opacity-75 text-truncate-2">
-              {video.description}
-            </p>
-          )}
-          {video.channel_name && (
-            <small className="text-light opacity-50">📺 {video.channel_name}</small>
-          )}
-          <div className="music-info">
-            <FaMusic className="music-icon" />
-            <span className="music-name">{video.type === 'shorts' ? 'Shorts' : 'Video'}</span>
-          </div>
-        </div>
-
-        <div className="scroll-indicator">
-          <FaChevronDown size={24} />
-          <span>Swipe up</span>
+          <span className="time-text">{formatTime(duration)}</span>
         </div>
       </div>
 
-      {/* ===== الأزرار بره الـ container - Fixed ===== */}
-      <div className="side-actions-fixed" ref={sideActionsRef}>
+      <div className="video-timeline">
+        <div className="timeline-bar">
+          <div className="timeline-fill" style={{ width: `${progress}%` }} />
+          <div className="timeline-dot" style={{ left: `${progress}%` }} />
+        </div>
+        <div className="timeline-time">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {showPlayIndicator && (
+        <div className={`play-indicator ${isPlaying ? 'playing' : 'paused'}`}>
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="white">
+              <rect x="6" y="4" width="4" height="16" />
+              <rect x="14" y="4" width="4" height="16" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="white">
+              <polygon points="5,3 19,12 5,21" />
+            </svg>
+          )}
+        </div>
+      )}
+
+      {isLoading && !playerError && (
+        <div className="loading-overlay">
+          <div className="text-center">
+            <Spinner animation="border" variant="light" size="lg" />
+            <p className="text-white mt-2 small">Loading video...</p>
+          </div>
+        </div>
+      )}
+
+      {playerError && (
+        <div className="loading-overlay">
+          <div className="text-center text-white">
+            <div className="display-1 mb-3">⚠️</div>
+            <h5>Failed to load video</h5>
+            <p className="text-muted small">Please try again</p>
+            <button className="btn btn-light btn-sm mt-2" onClick={handleRetry}>
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showFireworks && (
+        <div className="firework-container">
+          <span className="firework-emoji">❤️</span>
+          <span className="firework-emoji">🔥</span>
+          <span className="firework-emoji">✨</span>
+          <span className="firework-emoji">💖</span>
+          <span className="firework-emoji">⭐</span>
+        </div>
+      )}
+
+      <div className="reel-overlay">
+        <h5 className="fw-bold">@{username}</h5>
+        {video.title && (
+          <h6 className="mb-1 text-light" style={{ fontSize: '0.9rem' }}>
+            {video.title}
+          </h6>
+        )}
+        {video.description && video.description !== video.title && (
+          <p className="mb-0 small opacity-75 text-truncate-2">
+            {video.description}
+          </p>
+        )}
+        {video.channel_name && (
+          <small className="text-light opacity-50">📺 {video.channel_name}</small>
+        )}
+        <div className="music-info">
+          <FaMusic className="music-icon" />
+          <span className="music-name">{video.type === 'shorts' ? 'Shorts' : 'Video'}</span>
+        </div>
+      </div>
+
+      <div className="scroll-indicator">
+        <FaChevronDown size={24} />
+        <span>Swipe up</span>
+      </div>
+
+      {/* ===== Side Actions - ثابتة جوه الفيديو ===== */}
+      <div className="side-actions">
         <div className="action-item" onClick={handleLike}>
           <FaHeart 
             className={isLiked ? 'liked' : ''} 
@@ -517,7 +481,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
           {isMuted ? <FaVolumeMute size={28} /> : <FaVolumeUp size={28} />}
         </div>
       </div>
-    </>
+    </div>
   );
 });
 
