@@ -185,7 +185,7 @@ body {
   align-items: center;
   gap: clamp(1rem, 2.5vw, 1.8rem);
   color: #fff;
-  z-index: 50;
+  z-index: 9999; /* 🔥 خليها رقم كبير جداً */
   pointer-events: auto;
 }
 
@@ -196,16 +196,17 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 0.3rem 0.2rem;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.5rem 0.3rem;
   border-radius: 12px;
-  min-width: 40px;
+  min-width: 50px;
   pointer-events: auto;
   backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .action-item svg {
-  font-size: clamp(1.2rem, 3.5vw, 2rem);
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
   pointer-events: none;
 }
 
@@ -221,6 +222,7 @@ body {
 
 .action-item:hover {
   transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .action-item:active {
