@@ -470,30 +470,43 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
       </div>
 
       {/* ===== Side Actions ===== */}
-      <div className="side-actions">
-        {/* Like Button */}
-        <div className="action-item" onClick={handleLike}>
-          <FaHeart 
-            className={isLiked ? 'liked' : ''} 
-            size={32} 
-            style={isLiked ? { color: '#ff2d55' } : {}}
-          />
-          <span>{likesCount}</span>
-        </div>
+      {/* ===== Side Actions - Test ===== */}
+<div className="side-actions" style={{ 
+  position: 'absolute', 
+  bottom: '8rem', 
+  right: '1.5rem', 
+  display: 'flex', 
+  flexDirection: 'column', 
+  alignItems: 'center', 
+  gap: '1.5rem', 
+  color: '#fff', 
+  zIndex: 99999,
+  pointerEvents: 'auto',
+  backgroundColor: 'rgba(255,0,0,0.3)', /* 🔥 خلفية حمراء للاختبار */
+  padding: '1rem',
+  borderRadius: '12px'
+}}>
+  {/* Like Button */}
+  <div className="action-item" onClick={handleLike} style={{ cursor: 'pointer', textAlign: 'center' }}>
+    <FaHeart 
+      className={isLiked ? 'liked' : ''} 
+      size={32} 
+      style={isLiked ? { color: '#ff2d55' } : { color: 'white' }}
+    />
+    <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>{likesCount}</span>
+  </div>
 
-        {/* Views */}
-        <div className="action-item">
-          <FaEye size={26} />
-          <span>{viewsCount}</span>
-        </div>
+  {/* Views */}
+  <div className="action-item" style={{ textAlign: 'center' }}>
+    <FaEye size={26} style={{ color: 'white' }} />
+    <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>{viewsCount}</span>
+  </div>
 
-        {/* Mute/Unmute */}
-        <div className="action-item" onClick={toggleMute}>
-          {isMuted ? <FaVolumeMute size={28} /> : <FaVolumeUp size={28} />}
-        </div>
-      </div>
-    </div>
-  );
+  {/* Mute/Unmute */}
+  <div className="action-item" onClick={toggleMute} style={{ cursor: 'pointer', textAlign: 'center' }}>
+    {isMuted ? <FaVolumeMute size={28} style={{ color: 'white' }} /> : <FaVolumeUp size={28} style={{ color: 'white' }} />}
+  </div>
+</div>  );
 });
 
 YoutubeReel.displayName = 'YoutubeReel';
