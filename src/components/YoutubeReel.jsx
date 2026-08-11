@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { supabase } from "../lib/supabase";
 import {
   FaHeart,
@@ -14,7 +20,7 @@ import {
 } from "react-icons/fa";
 import { Spinner } from "react-bootstrap";
 
-const YoutubeReel = ({ video, onEnded, isVisible }) => {
+const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
@@ -36,6 +42,22 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   const [showControls, setShowControls] = useState(false);
 
   const username = video.users?.username || "user";
+
+  // Expose handleTogglePlay to parent (Feed)
+  useImperativeHandle(ref, () => ({
+    handleTogglePlay: () => {
+      if (!playerRef.current) return;
+      try {
+        if (isPlaying) {
+          playerRef.current.pauseVideo();
+          setIsPlaying(false);
+        } else {
+          playerRef.current.playVideo();
+          setIsPlaying(true);
+        }
+      } catch (error) {}
+    },
+  }));
 
   useEffect(() => {
     if (!playerRef.current || !playerInitialized.current) return;
@@ -317,6 +339,7 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
   };
 
   const formatTime = (time) => {
+    if (!time || isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -360,6 +383,17 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
           <span className="time-text">{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      <div className="video-timeline">
+        <div className="timeline-bar">
+          <div className="timeline-fill" style={{ width: `${progress}%` }} />
+          <div className="timeline-dot" style={{ left: `${progress}%` }} />
+        </div>
+        <div className="timeline-time">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
         </div>
       </div>
 
@@ -455,6 +489,8 @@ const YoutubeReel = ({ video, onEnded, isVisible }) => {
       </div>
     </div>
   );
-};
+});
+
+YoutubeReel.displayName = "YoutubeReel";
 
 export default YoutubeReel;

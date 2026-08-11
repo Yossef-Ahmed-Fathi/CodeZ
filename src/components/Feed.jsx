@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaCog } from "react-icons/fa";
-import YoutubeReel from "./YoutubeReel";
+import YouTubeReel from "./YouTubeReel";
 import UploadVideo from "./UploadVideo";
 import { Spinner } from "react-bootstrap";
 
@@ -20,10 +20,62 @@ const Feed = () => {
   const feedRef = useRef(null);
   const observerRef = useRef(null);
   const isFetchingRef = useRef(false);
+  const videoRefs = useRef([]);
 
-  // Admin user ID (replace with your admin user ID from Supabase)
-  const ADMIN_USER_ID = "681dca92-c909-4db1-8f01-0f9d014e7488";
+  const ADMIN_USER_ID = "your-admin-user-id-here";
 
+  // ===== Keyboard Controls =====
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // منع التمرير الافتراضي للصفحة
+      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === " ") {
+        e.preventDefault();
+      }
+
+      // Space: تشغيل/إيقاف الفيديو الحالي
+      if (e.key === " ") {
+        const currentVideo = videoRefs.current[visibleIndex];
+        if (currentVideo) {
+          currentVideo.handleTogglePlay();
+        }
+        return;
+      }
+
+      // ArrowDown: التمرير لأسفل
+      if (e.key === "ArrowDown") {
+        const nextIndex = Math.min(visibleIndex + 1, videos.length - 1);
+        if (nextIndex !== visibleIndex) {
+          scrollToIndex(nextIndex);
+        }
+        return;
+      }
+
+      // ArrowUp: التمرير لأعلى
+      if (e.key === "ArrowUp") {
+        const prevIndex = Math.max(visibleIndex - 1, 0);
+        if (prevIndex !== visibleIndex) {
+          scrollToIndex(prevIndex);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [visibleIndex, videos.length]);
+
+  const scrollToIndex = (index) => {
+    const container = feedRef.current;
+    if (!container) return;
+
+    const targetElement = container.children[index];
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth" });
+      setVisibleIndex(index);
+    }
+  };
+
+  // ===== باقي الكود (fetchRandomVideos, useEffect, etc.) =====
   const fetchRandomVideos = useCallback(
     async (count = 5) => {
       if (isFetchingRef.current) return;
@@ -47,9 +99,10 @@ const Feed = () => {
 
         if (unusedIds.length === 0) {
           setUsedVideoIds(new Set());
-          setHasMore(false);
+          setHasMore(true);
           setLoadingMore(false);
           isFetchingRef.current = false;
+          setTimeout(() => fetchRandomVideos(count), 500);
           return;
         }
 
@@ -109,6 +162,7 @@ const Feed = () => {
     [allVideoIds, usedVideoIds],
   );
 
+  // التحميل الأولي
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -118,6 +172,7 @@ const Feed = () => {
     init();
   }, []);
 
+  // مراقبة التمرير
   useEffect(() => {
     if (loading || videos.length === 0) return;
 
@@ -158,6 +213,7 @@ const Feed = () => {
     };
   }, [videos, loading]);
 
+  // Infinite Scroll
   useEffect(() => {
     if (loading || loadingMore || !hasMore || videos.length === 0) return;
 
@@ -254,11 +310,12 @@ const Feed = () => {
       ) : (
         <div className="feed-container" ref={feedRef}>
           {videos.map((video, index) => (
-            <YoutubeReel
+            <YouTubeReel
               key={video.id + "_" + index}
               video={video}
               onEnded={handleVideoEnded}
               isVisible={index === visibleIndex}
+              ref={(el) => (videoRefs.current[index] = el)}
             />
           ))}
           {loadingMore && (
