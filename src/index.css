@@ -174,22 +174,22 @@ body {
 }
 
 /* ============================================
-   Side Actions - Fixed (بره الفيديو)
+   Side Actions - جوه الفيديو
    ============================================ */
-.side-actions-fixed {
-  position: fixed;
-  z-index: 99999;
+.side-actions {
+  position: absolute;
+  bottom: 8rem;
+  right: clamp(0.5rem, 2vw, 1.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: clamp(1rem, 2.5vw, 1.8rem);
   color: #fff;
+  z-index: 9999;
   pointer-events: auto;
-  transition: top 0.1s ease-out;
-  right: 16px;
 }
 
-.side-actions-fixed .action-item {
+.side-actions .action-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -205,30 +205,29 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.side-actions-fixed .action-item svg {
+.side-actions .action-item svg {
   font-size: clamp(1.4rem, 3.5vw, 2.2rem);
   pointer-events: none;
 }
 
-.side-actions-fixed .action-item span {
+.side-actions .action-item span {
   font-size: clamp(0.6rem, 1.5vw, 0.8rem);
   font-weight: 700;
   margin-top: 2px;
 }
 
-.side-actions-fixed .action-item .liked {
+.side-actions .action-item .liked {
   color: #ff2d55;
 }
 
-.side-actions-fixed .action-item:hover {
+.side-actions .action-item:hover {
   transform: scale(1.1);
   background: rgba(0, 0, 0, 0.8);
 }
 
-.side-actions-fixed .action-item:active {
+.side-actions .action-item:active {
   transform: scale(0.9);
 }
-
 /* ============================================
    Scroll Indicator
    ============================================ */
