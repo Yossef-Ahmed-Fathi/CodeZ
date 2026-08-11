@@ -12,12 +12,15 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const playerRef = useRef(null);
   const playerInitialized = useRef(false);
 
+  // ===== Like & Views State =====
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes_count || 0);
   const [viewsCount, setViewsCount] = useState(video.views_count || 0);
+  const [hasViewed, setHasViewed] = useState(false);
+
+  // ===== باقي الـ State =====
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasViewed, setHasViewed] = useState(false);
   const [showFireworks, setShowFireworks] = useState(false);
   const [likeAnimation, setLikeAnimation] = useState(false);
   const [lastTap, setLastTap] = useState(0);
@@ -30,7 +33,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
 
   const username = video.users?.username || 'user';
 
-  // Expose handleTogglePlay to parent (Feed)
+  // ===== Expose handleTogglePlay =====
   useImperativeHandle(ref, () => ({
     handleTogglePlay: () => {
       if (!playerRef.current) return;
@@ -46,6 +49,87 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     }
   }));
 
+  // ===== Like System =====
+  // 1. Check if user already liked this video
+  useEffect(() => {
+    const checkLike = async () => {
+      try {
+        // استخدام user_id افتراضي (Admin)
+        const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
+        const { data } = await supabase
+          .from('likes')
+          .select('*')
+          .eq('video_id', video.id)
+          .eq('user_id', userId)
+          .single();
+        setIsLiked(!!data);
+      } catch (error) {}
+    };
+    checkLike();
+  }, [video.id]);
+
+  // 2. Handle Like
+  const handleLike = async () => {
+    const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
+    try {
+      if (isLiked) {
+        // Unlike
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('video_id', video.id)
+          .eq('user_id', userId);
+        setLikesCount(prev => prev - 1);
+        setIsLiked(false);
+      } else {
+        // Like
+        await supabase
+          .from('likes')
+          .insert({ video_id: video.id, user_id: userId });
+        setLikesCount(prev => prev + 1);
+        setIsLiked(true);
+        // تأثير الفرح
+        setShowFireworks(true);
+        setLikeAnimation(true);
+        setTimeout(() => {
+          setShowFireworks(false);
+          setLikeAnimation(false);
+        }, 800);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  // ===== Views System =====
+  useEffect(() => {
+    if (hasViewed || !isVisible) return;
+
+    const recordView = async () => {
+      try {
+        const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
+        // تسجيل المشاهدة
+        await supabase
+          .from('views')
+          .insert({ video_id: video.id, user_id: userId });
+        setViewsCount(prev => prev + 1);
+        setHasViewed(true);
+        
+        // تحديث عدد المشاهدات في جدول videos (اختياري)
+        await supabase
+          .from('videos')
+          .update({ views_count: viewsCount + 1 })
+          .eq('id', video.id);
+      } catch (error) {
+        console.error('Error recording view:', error);
+      }
+    };
+
+    const timer = setTimeout(recordView, 2000);
+    return () => clearTimeout(timer);
+  }, [video.id, hasViewed, isVisible, viewsCount]);
+
+  // ===== YouTube Player =====
   useEffect(() => {
     if (!playerRef.current || !playerInitialized.current) return;
     if (isVisible) {
@@ -182,36 +266,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (!video) return;
-    const checkLike = async () => {
-      try {
-        const { data } = await supabase
-          .from('likes')
-          .select('*')
-          .eq('video_id', video.id)
-          .single();
-        setIsLiked(!!data);
-      } catch (error) {}
-    };
-    checkLike();
-  }, [video.id]);
-
-  useEffect(() => {
-    if (hasViewed || !isVisible) return;
-    const recordView = async () => {
-      try {
-        await supabase
-          .from('views')
-          .insert({ video_id: video.id });
-        setViewsCount(prev => prev + 1);
-        setHasViewed(true);
-      } catch (error) {}
-    };
-    const timer = setTimeout(recordView, 3000);
-    return () => clearTimeout(timer);
-  }, [video.id, hasViewed, isVisible]);
-
+  // ===== Handlers =====
   const handleVideoClick = (e) => {
     e.stopPropagation();
     if (!playerRef.current) return;
@@ -262,42 +317,13 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     } catch (error) {}
   };
 
-  const handleLike = async () => {
-    if (isLiked) {
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('video_id', video.id);
-      setLikesCount(prev => prev - 1);
-      setIsLiked(false);
-    } else {
-      await supabase
-        .from('likes')
-        .insert({ video_id: video.id });
-      setLikesCount(prev => prev + 1);
-      setIsLiked(true);
-      setShowFireworks(true);
-      setLikeAnimation(true);
-      setTimeout(() => {
-        setShowFireworks(false);
-        setLikeAnimation(false);
-      }, 800);
-    }
-  };
-
+  // ===== Double Tap Like =====
   const handleDoubleTap = (e) => {
     e.preventDefault();
     const now = Date.now();
     const timeSinceLastTap = now - lastTap;
     if (timeSinceLastTap < 300 && !isLiked) {
-      setLikesCount(prev => prev + 1);
-      setIsLiked(true);
-      setShowFireworks(true);
-      setLikeAnimation(true);
-      setTimeout(() => {
-        setShowFireworks(false);
-        setLikeAnimation(false);
-      }, 800);
+      handleLike();
       setLastTap(0);
     } else {
       setLastTap(now);
@@ -344,6 +370,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     >
       <div className="reel-click-layer" onClick={handleVideoClick} />
 
+      {/* ===== Controls ===== */}
       <div className={`reel-controls ${showControls ? 'visible' : ''}`}>
         <div className="controls-top">
           <button className="control-btn" onClick={seekBackward} title="Back 5s">
@@ -365,6 +392,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       </div>
 
+      {/* ===== Timeline ===== */}
       <div className="video-timeline">
         <div className="timeline-bar">
           <div className="timeline-fill" style={{ width: `${progress}%` }} />
@@ -423,6 +451,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         </div>
       )}
 
+      {/* ===== Overlay ===== */}
       <div className="reel-overlay">
         <h5 className="fw-bold">@{username}</h5>
         {video.title && (
@@ -449,9 +478,14 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         <span>Swipe up</span>
       </div>
 
+      {/* ===== Side Actions (Like + Views) ===== */}
       <div className="side-actions">
         <div className="action-item" onClick={handleLike}>
-          <FaHeart className={isLiked ? 'liked' : ''} size={32} />
+          <FaHeart 
+            className={isLiked ? 'liked' : ''} 
+            size={32} 
+            style={isLiked ? { color: '#ff2d55' } : {}}
+          />
           <span>{likesCount}</span>
         </div>
         <div className="action-item">
