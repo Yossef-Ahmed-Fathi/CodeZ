@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
@@ -5,6 +6,15 @@ import { FaPlus, FaCog } from "react-icons/fa";
 import YouTubeReel from "./YouTubeReel";
 import UploadVideo from "./UploadVideo";
 import { Spinner } from "react-bootstrap";
+=======
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { FaPlus, FaCog } from 'react-icons/fa';
+import YoutubeReel from './YoutubeReel';
+import UploadVideo from './UploadVideo';
+import { Spinner } from 'react-bootstrap';
+>>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
 
 const Feed = () => {
   const navigate = useNavigate();
@@ -12,7 +22,7 @@ const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [hasMore, setHasMore] = useState(true);
   const [allVideoIds, setAllVideoIds] = useState([]);
   const [usedVideoIds, setUsedVideoIds] = useState(new Set());
@@ -22,6 +32,7 @@ const Feed = () => {
   const isFetchingRef = useRef(false);
   const videoRefs = useRef([]);
 
+<<<<<<< HEAD
   const ADMIN_USER_ID = "your-admin-user-id-here";
 
   // ===== Keyboard Controls =====
@@ -81,22 +92,36 @@ const Feed = () => {
       if (isFetchingRef.current) return;
       isFetchingRef.current = true;
       setLoadingMore(true);
+=======
+  const ADMIN_USER_ID = 'your-admin-user-id-here';
 
-      try {
-        let availableIds = allVideoIds;
-        if (availableIds.length === 0) {
-          const { data, error } = await supabase
-            .from("videos")
-            .select("id")
-            .eq("status", "approved");
+  // 🔥 جلب الفيديوهات العشوائية
+  const fetchRandomVideos = useCallback(async (count = 5) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
+>>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
 
-          if (error) throw error;
-          availableIds = data.map((v) => v.id);
-          setAllVideoIds(availableIds);
-        }
+    try {
+      // 1. جلب كل IDs الفيديوهات
+      let availableIds = allVideoIds;
+      if (availableIds.length === 0) {
+        const { data, error } = await supabase
+          .from('videos')
+          .select('id')
+          .eq('status', 'approved');
 
-        const unusedIds = availableIds.filter((id) => !usedVideoIds.has(id));
+        if (error) throw error;
+        availableIds = data.map(v => v.id);
+        setAllVideoIds(availableIds);
+        console.log('📹 Total videos available:', availableIds.length);
+      }
 
+      // 2. فلترة IDs المستخدمة
+      const unusedIds = availableIds.filter(id => !usedVideoIds.has(id));
+      console.log('📹 Unused videos:', unusedIds.length);
+
+<<<<<<< HEAD
         if (unusedIds.length === 0) {
           setUsedVideoIds(new Set());
           setHasMore(true);
@@ -155,13 +180,82 @@ const Feed = () => {
         console.error("Error:", error);
         setError("Failed to load videos");
       } finally {
+=======
+      // 3. لو مفيش فيديوهات جديدة
+      if (unusedIds.length === 0) {
+        console.log('🔄 All videos watched, resetting...');
+        setUsedVideoIds(new Set());
+        setHasMore(true);
+>>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
         setLoadingMore(false);
         isFetchingRef.current = false;
+        // جلب تاني بعد الـ reset
+        setTimeout(() => fetchRandomVideos(count), 500);
+        return;
       }
-    },
-    [allVideoIds, usedVideoIds],
-  );
 
+<<<<<<< HEAD
+=======
+      // 4. اختيار عشوائي
+      const shuffled = unusedIds.sort(() => Math.random() - 0.5);
+      const selectedIds = shuffled.slice(0, Math.min(count, shuffled.length));
+      console.log('🎲 Selected random IDs:', selectedIds);
+
+      // 5. جلب تفاصيل الفيديوهات
+      const { data: videosData, error: videosError } = await supabase
+        .from('videos')
+        .select('*')
+        .in('id', selectedIds);
+
+      if (videosError) throw videosError;
+
+      if (!videosData || videosData.length === 0) {
+        setHasMore(false);
+        setLoadingMore(false);
+        isFetchingRef.current = false;
+        return;
+      }
+
+      // 6. جلب أسماء المستخدمين
+      const userIds = [...new Set(videosData.map(v => v.user_id).filter(id => id))];
+      let usersMap = {};
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, username')
+          .in('id', userIds);
+        if (usersData) {
+          usersMap = usersData.reduce((acc, u) => {
+            acc[u.id] = u;
+            return acc;
+          }, {});
+        }
+      }
+
+      // 7. دمج البيانات
+      const mergedData = videosData.map(video => ({
+        ...video,
+        users: usersMap[video.user_id] || { username: 'Admin' }
+      }));
+
+      // 8. تحديث الحالة
+      setVideos(prev => [...prev, ...mergedData]);
+      const newIds = new Set(usedVideoIds);
+      mergedData.forEach(v => newIds.add(v.id));
+      setUsedVideoIds(newIds);
+
+      setHasMore(selectedIds.length === count);
+
+    } catch (error) {
+      console.error('❌ Error fetching videos:', error);
+      setError('Failed to load videos');
+    } finally {
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }
+  }, [allVideoIds, usedVideoIds]);
+
+>>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
   // التحميل الأولي
   useEffect(() => {
     const init = async () => {
@@ -191,8 +285,7 @@ const Feed = () => {
         const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
         const visibleHeight = Math.max(0, visibleBottom - visibleTop);
         const totalHeight = rect.height;
-        const visiblePercent =
-          totalHeight > 0 ? visibleHeight / totalHeight : 0;
+        const visiblePercent = totalHeight > 0 ? visibleHeight / totalHeight : 0;
 
         if (visiblePercent > maxVisible) {
           maxVisible = visiblePercent;
@@ -205,11 +298,11 @@ const Feed = () => {
       }
     };
 
-    container.addEventListener("scroll", handleScroll);
+    container.addEventListener('scroll', handleScroll);
     setTimeout(handleScroll, 100);
 
     return () => {
-      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener('scroll', handleScroll);
     };
   }, [videos, loading]);
 
@@ -220,13 +313,14 @@ const Feed = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          console.log('🔄 Loading more videos...');
           fetchRandomVideos(3);
         }
       },
-      { threshold: 0.5 },
+      { threshold: 0.5 }
     );
 
-    const lastElement = document.querySelector(".reel-item:last-child");
+    const lastElement = document.querySelector('.reel-item:last-child');
     if (lastElement) {
       observer.observe(lastElement);
       observerRef.current = observer;
@@ -240,8 +334,9 @@ const Feed = () => {
   }, [videos, loading, loadingMore, hasMore, fetchRandomVideos]);
 
   const handleVideoEnded = (videoId) => {
-    setVideos((prev) => {
-      const filtered = prev.filter((v) => v.id !== videoId);
+    console.log('🎬 Video ended:', videoId);
+    setVideos(prev => {
+      const filtered = prev.filter(v => v.id !== videoId);
       if (filtered.length < 3) {
         fetchRandomVideos(3);
       }
@@ -250,11 +345,11 @@ const Feed = () => {
   };
 
   return (
-    <div className="App" style={{ background: "#000", height: "100vh" }}>
+    <div className="App" style={{ background: '#000', height: '100vh' }}>
       <div className="floating-buttons">
         <button
           className="floating-btn floating-btn-admin"
-          onClick={() => navigate("/admin-login")}
+          onClick={() => navigate('/admin-login')}
           title="Admin Panel"
         >
           <FaCog />
@@ -262,24 +357,22 @@ const Feed = () => {
         <button
           className="floating-btn floating-btn-add"
           onClick={() => setShowUpload(!showUpload)}
-          title={showUpload ? "Close" : "Add Video"}
+          title={showUpload ? 'Close' : 'Add Video'}
         >
-          {showUpload ? "✕" : <FaPlus />}
+          {showUpload ? '✕' : <FaPlus />}
         </button>
       </div>
 
       {showUpload && (
         <div className="position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-75 d-flex align-items-center justify-content-center p-3 z-2">
           <div className="upload-modal">
-            <UploadVideo
-              onUpload={() => {
-                setAllVideoIds([]);
-                setUsedVideoIds(new Set());
-                setVideos([]);
-                fetchRandomVideos(5);
-                setShowUpload(false);
-              }}
-            />
+            <UploadVideo onUpload={() => {
+              setAllVideoIds([]);
+              setUsedVideoIds(new Set());
+              setVideos([]);
+              fetchRandomVideos(5);
+              setShowUpload(false);
+            }} />
             <button
               className="btn btn-secondary w-100 mt-2"
               onClick={() => setShowUpload(false)}
@@ -310,8 +403,13 @@ const Feed = () => {
       ) : (
         <div className="feed-container" ref={feedRef}>
           {videos.map((video, index) => (
+<<<<<<< HEAD
             <YouTubeReel
               key={video.id + "_" + index}
+=======
+            <YoutubeReel
+              key={video.id + '_' + index}
+>>>>>>> 27e2454b04dd68cb86c08e9c32981350eda9aa69
               video={video}
               onEnded={handleVideoEnded}
               isVisible={index === visibleIndex}
@@ -321,16 +419,12 @@ const Feed = () => {
           {loadingMore && (
             <div className="d-flex justify-content-center align-items-center p-4 bg-black">
               <Spinner animation="border" variant="light" size="sm" />
-              <span className="text-white ms-2 small">
-                Loading more videos...
-              </span>
+              <span className="text-white ms-2 small">Loading more videos...</span>
             </div>
           )}
           {!hasMore && videos.length > 0 && (
             <div className="text-center py-4 text-muted">
-              <small>
-                🎬 You've watched all videos! Scroll down to refresh.
-              </small>
+              <small>🎬 You've watched all videos! Scroll down to refresh.</small>
             </div>
           )}
         </div>

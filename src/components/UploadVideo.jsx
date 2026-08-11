@@ -92,6 +92,7 @@ const UploadVideo = ({ onUpload }) => {
       setVideoInfo(null);
       onUpload?.();
       alert("✅ Video added successfully! Waiting for admin approval.");
+      window.location.href = '/'
     } catch (error) {
       console.error("Error:", error);
       alert("❌ Error: " + error.message);
