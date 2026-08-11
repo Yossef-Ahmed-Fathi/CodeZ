@@ -506,7 +506,8 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   <div className="action-item" onClick={toggleMute} style={{ cursor: 'pointer', textAlign: 'center' }}>
     {isMuted ? <FaVolumeMute size={28} style={{ color: 'white' }} /> : <FaVolumeUp size={28} style={{ color: 'white' }} />}
   </div>
-</div>  );
+</div> 
+    </div>);
 });
 
 YoutubeReel.displayName = 'YoutubeReel';
