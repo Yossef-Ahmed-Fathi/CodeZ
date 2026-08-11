@@ -16,20 +16,18 @@ const Feed = () => {
   const [error, setError] = useState('');
   const [hasMore, setHasMore] = useState(true);
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0); // 🔥 تبدأ من 0
   const feedRef = useRef(null);
   const observerRef = useRef(null);
   const videoRefs = useRef([]);
   
-  const ITEMS_PER_PAGE = 5; // عدد الفيديوهات في كل دفعة
+  const ITEMS_PER_PAGE = 5;
 
   const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
-  // ===== جلب كل الفيديوهات =====
   const fetchAllVideos = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. جلب كل الفيديوهات الموافق عليها
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
         .select('*')
@@ -45,7 +43,6 @@ const Feed = () => {
         return;
       }
 
-      // 2. جلب أسماء المستخدمين
       const userIds = [...new Set(videosData.map(v => v.user_id).filter(id => id))];
       let usersMap = {};
       if (userIds.length > 0) {
@@ -61,22 +58,24 @@ const Feed = () => {
         }
       }
 
-      // 3. دمج البيانات
       const mergedData = videosData.map(video => ({
         ...video,
         users: usersMap[video.user_id] || { username: 'Admin' }
       }));
 
-      // 4. ترتيب عشوائي (مرة واحدة فقط)
       const shuffled = mergedData.sort(() => Math.random() - 0.5);
       
       setAllVideos(shuffled);
       
-      // 5. عرض أول دفعة
+      // 🔥 العرض الأول (الصفحة 0)
       const initialBatch = shuffled.slice(0, ITEMS_PER_PAGE);
       setDisplayedVideos(initialBatch);
-      setPage(1);
+      setPage(0);
       setHasMore(shuffled.length > ITEMS_PER_PAGE);
+
+      console.log('📹 Total videos:', shuffled.length);
+      console.log('📹 Initial batch:', initialBatch.length);
+      console.log('📹 Has more:', shuffled.length > ITEMS_PER_PAGE);
 
     } catch (error) {
       console.error('Error fetching videos:', error);
@@ -86,30 +85,32 @@ const Feed = () => {
     }
   }, []);
 
-  // ===== تحميل الدفعة التالية =====
+  // 🔥 تحميل الدفعة التالية (مصلح)
   const loadMoreVideos = useCallback(() => {
     if (loadingMore || !hasMore) return;
     
     setLoadingMore(true);
     
-    // محاكاة تأخير بسيط عشان用户体验 أحسن
-    setTimeout(() => {
-      const nextPage = page + 1;
-      const startIndex = (nextPage - 1) * ITEMS_PER_PAGE;
-      const endIndex = startIndex + ITEMS_PER_PAGE;
-      const nextBatch = allVideos.slice(startIndex, endIndex);
-      
-      if (nextBatch.length === 0) {
-        setHasMore(false);
-        setLoadingMore(false);
-        return;
-      }
-      
-      setDisplayedVideos(prev => [...prev, ...nextBatch]);
-      setPage(nextPage);
-      setHasMore(endIndex < allVideos.length);
+    const nextPage = page + 1;
+    const startIndex = nextPage * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const nextBatch = allVideos.slice(startIndex, endIndex);
+    
+    console.log('📹 Loading more - Page:', nextPage);
+    console.log('📹 Start:', startIndex, 'End:', endIndex);
+    console.log('📹 Batch size:', nextBatch.length);
+    console.log('📹 All videos:', allVideos.length);
+    
+    if (nextBatch.length === 0) {
+      setHasMore(false);
       setLoadingMore(false);
-    }, 300);
+      return;
+    }
+    
+    setDisplayedVideos(prev => [...prev, ...nextBatch]);
+    setPage(nextPage);
+    setHasMore(endIndex < allVideos.length);
+    setLoadingMore(false);
   }, [allVideos, page, hasMore, loadingMore]);
 
   // التحميل الأولي
@@ -117,13 +118,18 @@ const Feed = () => {
     fetchAllVideos();
   }, []);
 
-  // مراقبة التمرير (Infinite Scroll)
+  // 🔥 Infinite Scroll Observer
   useEffect(() => {
     if (loading || loadingMore || !hasMore || displayedVideos.length === 0) return;
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          console.log('🔄 Triggering load more...');
           loadMoreVideos();
         }
       },
@@ -230,9 +236,7 @@ const Feed = () => {
     };
   }, [displayedVideos, loading]);
 
-  // ===== عند انتهاء الفيديو =====
   const handleVideoEnded = (videoId) => {
-    // نحرك للفيديو اللي بعده تلقائياً
     const nextIndex = Math.min(visibleIndex + 1, displayedVideos.length - 1);
     if (nextIndex !== visibleIndex) {
       setTimeout(() => scrollToIndex(nextIndex), 500);
