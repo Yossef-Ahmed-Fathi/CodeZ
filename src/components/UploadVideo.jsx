@@ -5,7 +5,7 @@ import { autoReviewVideo } from '../lib/chatbot';
 
 const UploadVideo = ({ onUpload }) => {
   const [youtubeLink, setYoutubeLink] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(false); 
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
 
