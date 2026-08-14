@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { FaYoutube, FaUpload, FaSpinner } from "react-icons/fa";
+import { autoReviewVideo } from '../lib/chatbot';
 
 const UploadVideo = ({ onUpload }) => {
   const [youtubeLink, setYoutubeLink] = useState("");
@@ -100,6 +101,8 @@ const UploadVideo = ({ onUpload }) => {
       setUploading(false);
     }
   };
+  const { status, analysis } = await autoReviewVideo(videoId);
+console.log('🤖 Auto-review result:', status, analysis);
 
   const handleLinkChange = (e) => {
     const url = e.target.value;
