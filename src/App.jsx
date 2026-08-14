@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Feed from './components/Feed';
 import AdminPage from './pages/AdminPage';
 import AdminLogin from './components/AdminLogin';
-import VideoPage from './pages/VideoPage';
+import VideoPage from './components/VideoPage';
 import Chatbot from './components/Chatbot';
 import VisitCounter from './components/VisitCounter';
 import { FaCommentDots } from 'react-icons/fa';
@@ -26,7 +26,6 @@ function App() {
     <BrowserRouter>
       <VisitCounter />
       
-      {/* Chatbot Button */}
       <button 
         className="chatbot-toggle-btn"
         onClick={() => setIsChatOpen(!isChatOpen)}
