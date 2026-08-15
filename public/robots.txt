@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://codez-reels.vercel.app/sitemap.xml
