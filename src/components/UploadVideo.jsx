@@ -9,7 +9,7 @@ const UploadVideo = ({ onUpload }) => {
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
 
-  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
+  const ADMIN_USER_ID = 'your-admin-user-id-here';
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
@@ -74,7 +74,6 @@ const UploadVideo = ({ onUpload }) => {
 
     setUploading(true);
     try {
-      // 1. إضافة الفيديو
       const { data, error } = await supabase
         .from('videos')
         .insert({
@@ -93,7 +92,6 @@ const UploadVideo = ({ onUpload }) => {
 
       if (error) throw error;
 
-      // 2. مراجعة تلقائية بواسطة Chatbot
       if (data && data[0]) {
         const video = data[0];
         const { status, analysis } = await autoReviewVideo(videoId);
