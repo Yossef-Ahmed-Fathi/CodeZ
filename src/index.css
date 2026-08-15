@@ -1438,3 +1438,151 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   Footer Menu
+   ============================================ */
+.footer-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 0 12px;
+  z-index: 99;
+}
+
+.footer-menu-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+.footer-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px 12px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.footer-menu-item svg {
+  font-size: 1.4rem;
+  transition: all 0.3s ease;
+}
+
+.footer-menu-item span {
+  font-size: 0.6rem;
+  letter-spacing: 0.5px;
+}
+
+.footer-menu-item:hover {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+}
+
+.footer-menu-item.active {
+  color: #6366f1;
+}
+
+.footer-menu-item.active svg {
+  transform: scale(1.1);
+}
+
+.footer-menu-item.active::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: #6366f1;
+  border-radius: 4px;
+}
+
+/* ============================================
+   Chatbot Overlay (Update)
+   ============================================ */
+.chatbot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.chatbot-container {
+  background: #1a1a2e;
+  width: 100%;
+  max-width: 450px;
+  height: 70vh;
+  max-height: 500px;
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+/* ============================================
+   Mobile Adjustments
+   ============================================ */
+@media (max-width: 576px) {
+  .footer-menu {
+    padding: 6px 0 10px;
+  }
+  
+  .footer-menu-item {
+    padding: 2px 8px;
+  }
+  
+  .footer-menu-item svg {
+    font-size: 1.2rem;
+  }
+  
+  .footer-menu-item span {
+    font-size: 0.5rem;
+  }
+  
+  .chatbot-container {
+    max-height: 80vh;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .floating-buttons {
+    bottom: 80px;
+  }
+  
+  .floating-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .footer-menu-item {
+    padding: 2px 4px;
+  }
+  
+  .footer-menu-item svg {
+    font-size: 1rem;
+  }
+}
