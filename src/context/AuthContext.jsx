@@ -51,7 +51,6 @@ export const AuthProvider = ({ children }) => {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // Sign Up
   const signUp = async (email, password, username) => {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -61,7 +60,6 @@ export const AuthProvider = ({ children }) => {
       },
     });
 
-    // إضافة المستخدم في جدول users
     if (data.user) {
       await supabase
         .from('users')
@@ -77,7 +75,6 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
-  // Sign In
   const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -91,23 +88,10 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
-  // Sign Out
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     setIsAdmin(false);
     return { error };
-  };
-
-  // Update Profile
-  const updateProfile = async (updates) => {
-    if (!user) return { error: 'No user logged in' };
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
-    return { data, error };
   };
 
   return (
@@ -118,8 +102,6 @@ export const AuthProvider = ({ children }) => {
       signUp,
       signIn,
       signOut,
-      updateProfile,
-      checkAdminStatus,
     }}>
       {children}
     </AuthContext.Provider>
