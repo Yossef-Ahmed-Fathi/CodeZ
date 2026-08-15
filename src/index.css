@@ -2114,3 +2114,70 @@ body {
     font-size: 0.75rem;
   }
 }
+
+/* ============================================
+   Chatbot Page - Additional Styles
+   ============================================ */
+.chatbot-page-header {
+  margin-bottom: 0.5rem;
+}
+
+.chatbot-page-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  align-items: center;
+}
+
+.chatbot-page-topics-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chatbot-page-topic-btn {
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chatbot-page-topic-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: white;
+  transform: scale(1.02);
+}
+
+.chatbot-page-sentiment {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.chatbot-page-sentiment.positive {
+  color: #34d399;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 576px) {
+  .chatbot-page-topics {
+    gap: 4px;
+  }
+  .chatbot-page-topic-btn {
+    font-size: 0.6rem;
+    padding: 3px 8px;
+  }
+  .chatbot-page-topics-label {
+    font-size: 0.6rem;
+  }
+}
