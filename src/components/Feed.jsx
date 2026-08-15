@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaCog } from 'react-icons/fa';
+import { FaPlus, FaCog, FaHome, FaQuestionCircle, FaCommentDots, FaUser } from 'react-icons/fa';
 import YoutubeReel from './YoutubeReel';
 import UploadVideo from './UploadVideo';
 import { Spinner } from 'react-bootstrap';
@@ -13,6 +13,7 @@ const Feed = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
   const [visibleIndex, setVisibleIndex] = useState(0);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const feedRef = useRef(null);
   const videoRefs = useRef([]);
 
@@ -167,77 +168,9 @@ const Feed = () => {
     }
   };
 
-  // ===== FAQ Schema (Structured Data) =====
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What is CodeZ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "CodeZ is an educational video platform that curates the best educational content from YouTube in a seamless, TikTok-like reel format."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How do I add a video?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Click the + button, paste a YouTube URL, and the system will auto-review it for educational quality."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is CodeZ free?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes, CodeZ is completely free to use."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How does the chatbot help me?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "The chatbot can search for educational videos based on your questions and recommend the most relevant ones."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I share videos with others?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes! Each video has a unique URL you can share with anyone."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How are videos reviewed?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Videos are automatically reviewed using AI to detect educational content. Admins can also manually review them."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What types of videos are available?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "We have educational videos in Math, Science, Programming, Languages, History, and more."
-        }
-      }
-    ]
-  };
-
   return (
     <div className="App" style={{ background: '#000', height: '100vh' }}>
-      {/* FAQ Structured Data */}
-      <script type="application/ld+json">
-        {JSON.stringify(faqSchema)}
-      </script>
-
+      {/* Floating Buttons (Admin & Add) */}
       <div className="floating-buttons">
         <button
           className="floating-btn floating-btn-admin"
@@ -303,7 +236,100 @@ const Feed = () => {
         </div>
       )}
 
-      {/* FAQ Footer */}
+      {/* ===== FOOTER MENU ===== */}
+      <div className="footer-menu">
+        <div className="footer-menu-container">
+          <button 
+            className="footer-menu-item active"
+            onClick={() => navigate('/')}
+          >
+            <FaHome />
+            <span>Home</span>
+          </button>
+          
+          <button 
+            className="footer-menu-item"
+            onClick={() => {
+              // Scroll to FAQ section (or navigate)
+              const faqElement = document.querySelector('.faq-footer');
+              if (faqElement) {
+                faqElement.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
+            <FaQuestionCircle />
+            <span>FAQ</span>
+          </button>
+          
+          <button 
+            className="footer-menu-item"
+            onClick={() => setIsChatOpen(!isChatOpen)}
+          >
+            <FaCommentDots />
+            <span>Chatbot</span>
+          </button>
+          
+          <button 
+            className="footer-menu-item"
+            onClick={() => navigate('/admin-login')}
+          >
+            <FaUser />
+            <span>Account</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ===== Chatbot Modal ===== */}
+      {isChatOpen && (
+        <div className="chatbot-overlay" onClick={() => setIsChatOpen(false)}>
+          <div className="chatbot-container" onClick={(e) => e.stopPropagation()}>
+            <div className="chatbot-header">
+              <div className="chatbot-header-info">
+                <FaCommentDots className="chatbot-icon" />
+                <div>
+                  <h6>🎓 EduBot</h6>
+                  <small>Ask me anything!</small>
+                </div>
+              </div>
+              <button className="chatbot-close" onClick={() => setIsChatOpen(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="chatbot-messages">
+              <div className="chatbot-message bot">
+                <div className="chatbot-avatar"><FaUser /></div>
+                <div className="chatbot-bubble">
+                  <div className="chatbot-text">👋 Hi! I'm EduBot. Ask me anything about educational videos!</div>
+                </div>
+              </div>
+              <div className="chatbot-message user">
+                <div className="chatbot-avatar"><FaUser /></div>
+                <div className="chatbot-bubble">
+                  <div className="chatbot-text">What is CodeZ?</div>
+                </div>
+              </div>
+              <div className="chatbot-message bot">
+                <div className="chatbot-avatar"><FaUser /></div>
+                <div className="chatbot-bubble">
+                  <div className="chatbot-text">CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format!</div>
+                </div>
+              </div>
+            </div>
+            <form className="chatbot-input-form" onSubmit={(e) => e.preventDefault()}>
+              <input
+                type="text"
+                className="chatbot-input"
+                placeholder="Ask about any topic..."
+              />
+              <button type="submit" className="chatbot-send-btn">
+                <FaPaperPlane />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== FAQ Footer ===== */}
       <div className="faq-footer">
         <div className="faq-container">
           <h5 className="faq-title">❓ Frequently Asked Questions</h5>
