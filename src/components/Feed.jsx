@@ -271,7 +271,7 @@ const Feed = () => {
           
           <button 
             className="footer-menu-item"
-            onClick={() => navigate('/admin-login')}
+            onClick={() => navigate('/account')}
           >
             <FaUser />
             <span>Account</span>
