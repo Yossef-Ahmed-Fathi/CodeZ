@@ -44,8 +44,8 @@ const ChatbotPage = () => {
       // تحليل المشاعر
       const sentiment = analyzeSentiment(input);
       
-      // جلب الرد
-      const response = await getChatbotResponse(input, messages);
+      // جلب الرد باستخدام getEnhancedResponse
+      const response = await getEnhancedResponse(input, messages);
       
       const botMessage = {
         id: Date.now() + 1,
