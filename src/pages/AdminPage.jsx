@@ -26,7 +26,7 @@ const AdminPage = () => {
     approved: 0,
     rejected: 0,
     users: 0,
-    visits: 0 // 🔥 إضافة عدد الزيارات
+    visits: 0
   });
 
   const [newShortLink, setNewShortLink] = useState('');
@@ -36,7 +36,6 @@ const AdminPage = () => {
 
   const [editDescription, setEditDescription] = useState('');
 
-  // Check admin login
   useEffect(() => {
     const adminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
     if (!adminLoggedIn) {
@@ -49,7 +48,6 @@ const AdminPage = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // 1. جلب الفيديوهات
       const { data: allVideos, error: videosError } = await supabase
         .from('videos')
         .select('*')
@@ -57,7 +55,6 @@ const AdminPage = () => {
 
       if (videosError) throw videosError;
 
-      // 2. جلب المستخدمين
       const userIds = [...new Set(allVideos?.map(v => v.user_id).filter(id => id) || [])];
       let usersMap = {};
 
@@ -84,7 +81,6 @@ const AdminPage = () => {
       const approved = mergedVideos.filter(v => v.status === 'approved');
       const rejected = mergedVideos.filter(v => v.status === 'rejected');
 
-      // 🔥 3. جلب عدد زيارات الموقع
       let visitsCount = 0;
       try {
         const { data: visitData, error: visitError } = await supabase
@@ -97,8 +93,6 @@ const AdminPage = () => {
           visitsCount = visitData.visit_count || 0;
         }
       } catch (error) {
-        console.log('Could not fetch visit count:', error);
-        // لو الجدول مش موجود، استخدم LocalStorage
         visitsCount = parseInt(localStorage.getItem('localVisitCount')) || 0;
       }
 
@@ -108,7 +102,7 @@ const AdminPage = () => {
         approved: approved.length,
         rejected: rejected.length,
         users: userIds.length,
-        visits: visitsCount // 🔥 عدد الزيارات
+        visits: visitsCount
       });
 
       setVideos(mergedVideos);
@@ -121,7 +115,6 @@ const AdminPage = () => {
     }
   };
 
-  // باقي الدوال (approveVideo, rejectVideo, deleteVideo, etc.) نفسها
   const extractYoutubeId = (url) => {
     if (!url) return null;
     const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/;
@@ -303,7 +296,6 @@ const AdminPage = () => {
 
   return (
     <div className="admin-page">
-      {/* Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div className="d-flex align-items-center gap-3">
           <button className="btn btn-outline-light btn-sm" onClick={() => navigate('/')}>
@@ -324,7 +316,6 @@ const AdminPage = () => {
         </div>
       </div>
 
-      {/* 🔥 Stats - مع عدد الزيارات */}
       <div className="row g-2 g-md-3 mb-4">
         <div className="col-6 col-md-3">
           <div className="stat-card">
@@ -356,7 +347,6 @@ const AdminPage = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="d-flex flex-wrap gap-2 mb-4">
         <button
           className={`tab-btn ${activeTab === 'pending' ? 'btn btn-warning' : 'btn btn-outline-secondary'}`}
@@ -372,7 +362,6 @@ const AdminPage = () => {
         </button>
       </div>
 
-      {/* Search & Filter */}
       {activeTab === 'all' && (
         <div className="d-flex flex-wrap gap-3 mb-4">
           <div className="position-relative flex-grow-1" style={{ minWidth: '150px' }}>
@@ -399,7 +388,6 @@ const AdminPage = () => {
         </div>
       )}
 
-      {/* Content */}
       {loading ? (
         <div className="text-center py-5">
           <Spinner animation="border" variant="light" size="lg" />
@@ -525,7 +513,6 @@ const AdminPage = () => {
         </div>
       )}
 
-      {/* Add Shorts Modal */}
       {showAddModal && (
         <div className="position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-75 d-flex align-items-center justify-content-center p-3 z-3">
           <div className="bg-dark p-4 rounded-4 text-white" style={{ maxWidth: '500px', width: '100%' }}>
