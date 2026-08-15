@@ -357,9 +357,7 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
   const videos = await advancedSearch(question);
   
   if (videos && videos.length > 0) {
-    const videoList = videos.map((v, i) => 
-      `${i + 1}. **${v.title || 'Untitled'}**`
-    ).join('\n');
+    
     
     return {
       text: `🔍 I found these videos based on your question:\n\n${videoList}\n\n💡 Click on any video to watch it!`,
