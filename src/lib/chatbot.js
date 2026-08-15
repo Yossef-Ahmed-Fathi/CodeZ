@@ -78,7 +78,26 @@ export const autoReviewVideo = async (videoId) => {
 };
 
 // ============================================
-// 4. جلب محتوى الفيديو بالكامل
+// 4. جلب كل الفيديوهات من قاعدة البيانات
+// ============================================
+export const fetchAllVideos = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching all videos:', error);
+    return [];
+  }
+};
+
+// ============================================
+// 5. جلب محتوى الفيديو بالكامل
 // ============================================
 export const fetchVideoContent = async (videoId) => {
   try {
@@ -111,7 +130,7 @@ export const fetchVideoContent = async (videoId) => {
 };
 
 // ============================================
-// 5. استخراج الكلمات المفتاحية الذكية
+// 6. استخراج الكلمات المفتاحية الذكية
 // ============================================
 export const extractSmartKeywords = (text) => {
   const fullText = text.toLowerCase();
@@ -145,7 +164,7 @@ export const extractSmartKeywords = (text) => {
 };
 
 // ============================================
-// 6. توليد ملخص تلقائي
+// 7. توليد ملخص تلقائي
 // ============================================
 export const generateSummary = (title, description, keywords) => {
   if (!description) return title;
@@ -158,7 +177,7 @@ export const generateSummary = (title, description, keywords) => {
 };
 
 // ============================================
-// 7. معالجة الفيديو (استخراج المحتوى والكلمات)
+// 8. معالجة الفيديو (استخراج المحتوى والكلمات)
 // ============================================
 export const processVideo = async (videoId) => {
   try {
@@ -223,75 +242,89 @@ export const processVideo = async (videoId) => {
 };
 
 // ============================================
-// 8. البحث المتقدم
+// 9. البحث المتقدم (قراءة كل الفيديوهات)
 // ============================================
 export const advancedSearch = async (query) => {
   try {
+    // 1. جلب كل الفيديوهات أولاً
+    const allVideos = await fetchAllVideos();
+    
+    if (!allVideos || allVideos.length === 0) {
+      return [];
+    }
+    
+    // 2. استخراج كلمات السؤال
     const queryWords = extractSmartKeywords(query);
+    console.log('🔍 Query words:', queryWords);
     
-    const { data: keywordMatches, error } = await supabase
-      .from('keyword_index')
-      .select('*')
-      .in('keyword', queryWords);
-    
-    if (error || !keywordMatches || keywordMatches.length === 0) {
-      return searchVideosByQuestion(query);
-    }
-    
-    const videoIdSet = new Set();
-    keywordMatches.forEach(kw => {
-      (kw.video_ids || []).forEach(id => {
-        videoIdSet.add(id);
-      });
-    });
-    
-    const videoIds = Array.from(videoIdSet);
-    if (videoIds.length === 0) {
-      return searchVideosByQuestion(query);
-    }
-    
-    const { data: videos, error: videosError } = await supabase
-      .from('videos')
-      .select('*')
-      .in('id', videoIds)
-      .eq('status', 'approved');
-    
-    if (videosError) throw videosError;
-    
-    const ranked = videos.map(video => {
+    // 3. ترتيب الفيديوهات حسب الأهمية
+    const ranked = allVideos.map(video => {
+      // جلب الكلمات المفتاحية من الفيديو
+      const videoKeywords = video.keywords || [];
+      const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
+      const extractedKeywords = extractSmartKeywords(videoText);
+      
+      // حساب درجة التشابه
       let matchCount = 0;
-      (video.keywords || []).forEach(kw => {
-        if (queryWords.includes(kw)) matchCount++;
+      let matchScore = 0;
+      
+      // 1. تطابق الكلمات المفتاحية المخزنة
+      queryWords.forEach(qWord => {
+        videoKeywords.forEach(kw => {
+          if (kw.includes(qWord) || qWord.includes(kw)) {
+            matchCount += 2;
+            matchScore += 5;
+          }
+        });
       });
-      return { ...video, score: matchCount };
+      
+      // 2. تطابق الكلمات المستخرجة
+      queryWords.forEach(qWord => {
+        extractedKeywords.forEach(kw => {
+          if (kw.includes(qWord) || qWord.includes(kw)) {
+            matchCount += 1;
+            matchScore += 3;
+          }
+        });
+      });
+      
+      // 3. تطابق بسيط في النص
+      queryWords.forEach(qWord => {
+        if (videoText.toLowerCase().includes(qWord)) {
+          matchCount += 1;
+          matchScore += 2;
+        }
+      });
+      
+      const score = matchCount > 0 ? (matchScore / Math.max(queryWords.length, 1)) : 0;
+      
+      return { ...video, score };
     });
     
+    // 4. ترتيب تنازلي
     ranked.sort((a, b) => b.score - a.score);
-    return ranked.slice(0, 5).filter(v => v.score > 0);
+    
+    // 5. إرجاع أفضل 5 نتائج (مع حد أدنى للدرجة)
+    return ranked.slice(0, 5).filter(v => v.score > 1);
     
   } catch (error) {
     console.error('Error in advanced search:', error);
-    return searchVideosByQuestion(query);
+    return [];
   }
 };
 
 // ============================================
-// 9. البحث العادي
+// 10. البحث العادي
 // ============================================
 export const searchVideosByQuestion = async (question) => {
   try {
-    const { data: videos, error } = await supabase
-      .from('videos')
-      .select('*')
-      .eq('status', 'approved')
-      .limit(20);
-
-    if (error) throw error;
-    if (!videos || videos.length === 0) return [];
+    const allVideos = await fetchAllVideos();
+    
+    if (!allVideos || allVideos.length === 0) return [];
 
     const questionWords = extractSmartKeywords(question);
 
-    const ranked = videos.map(video => {
+    const ranked = allVideos.map(video => {
       const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
       const videoWords = extractSmartKeywords(videoText);
       
@@ -319,11 +352,10 @@ export const searchVideosByQuestion = async (question) => {
 };
 
 // ============================================
-// 10. الردود المحسنة
+// 11. الردود المحسنة (مع قراءة كل الفيديوهات)
 // ============================================
 export const getEnhancedResponse = async (question, previousMessages = []) => {
-  const videos = await advancedSearch(question);
-  
+  // 1. البحث في قاعدة المعرفة
   const knowledgeMatch = searchKnowledgeBase(question);
   
   if (knowledgeMatch) {
@@ -334,6 +366,9 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
       keywords: extractSmartKeywords(question),
     };
   }
+  
+  // 2. البحث المتقدم في كل الفيديوهات
+  const videos = await advancedSearch(question);
   
   if (videos && videos.length > 0) {
     const videoList = videos.map((v, i) => {
@@ -358,7 +393,7 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
 };
 
 // ============================================
-// 11. قاعدة المعرفة
+// 12. قاعدة المعرفة
 // ============================================
 const knowledgeBase = [
   {
@@ -392,7 +427,7 @@ const knowledgeBase = [
 ];
 
 // ============================================
-// 12. البحث في قاعدة المعرفة
+// 13. البحث في قاعدة المعرفة
 // ============================================
 const searchKnowledgeBase = (question) => {
   const words = extractSmartKeywords(question);
@@ -422,7 +457,7 @@ const searchKnowledgeBase = (question) => {
 };
 
 // ============================================
-// 13. تحليل المشاعر
+// 14. تحليل المشاعر
 // ============================================
 export const analyzeSentiment = (text) => {
   const positiveWords = ['good', 'great', 'awesome', 'excellent', 'amazing', 'love', 'like', 'thanks', 'thank you', 'perfect'];
@@ -442,7 +477,7 @@ export const analyzeSentiment = (text) => {
 };
 
 // ============================================
-// 14. اقتراح مواضيع شائعة
+// 15. اقتراح مواضيع شائعة
 // ============================================
 export const getPopularTopics = () => {
   return [
