@@ -1,21 +1,19 @@
-import React, { useState } from "react";
-import { supabase } from "../lib/supabase";
-import { FaYoutube, FaUpload, FaSpinner } from "react-icons/fa";
+import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { FaYoutube, FaUpload, FaSpinner } from 'react-icons/fa';
 import { autoReviewVideo } from '../lib/chatbot';
 
 const UploadVideo = ({ onUpload }) => {
-  const [youtubeLink, setYoutubeLink] = useState("");
-  const [uploading, setUploading] = useState(false); 
+  const [youtubeLink, setYoutubeLink] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
 
-  // Admin user ID (replace with your admin user ID from Supabase)
-  const ADMIN_USER_ID = "681dca92-c909-4db1-8f01-0f9d014e7488";
+  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
-    const regex =
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/;
+    const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/;
     const match = url.match(regex);
     return match ? match[1] : null;
   };
@@ -23,32 +21,32 @@ const UploadVideo = ({ onUpload }) => {
   const fetchVideoInfo = async (url) => {
     const videoId = extractYoutubeId(url);
     if (!videoId) {
-      alert("Invalid YouTube URL");
+      alert('Invalid YouTube URL');
       return;
     }
 
     setFetchingInfo(true);
     try {
       const response = await fetch(
-        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
       );
-      if (!response.ok) throw new Error("Failed to fetch video info");
+      if (!response.ok) throw new Error('Failed to fetch video info');
       const data = await response.json();
 
       setVideoInfo({
-        title: data.title || "No title",
-        author: data.author_name || "Unknown",
-        thumbnail: data.thumbnail_url || "",
-        description: "",
+        title: data.title || 'No title',
+        author: data.author_name || 'Unknown',
+        thumbnail: data.thumbnail_url || '',
+        description: '',
         videoId: videoId,
       });
     } catch (error) {
-      console.error("Error fetching video info:", error);
+      console.error('Error fetching video info:', error);
       setVideoInfo({
-        title: "Educational Video",
-        author: "YouTube",
-        thumbnail: "",
-        description: "",
+        title: 'Educational Video',
+        author: 'YouTube',
+        thumbnail: '',
+        description: '',
         videoId: videoId,
       });
     } finally {
@@ -59,55 +57,76 @@ const UploadVideo = ({ onUpload }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!youtubeLink) {
-      alert("Please enter a YouTube URL");
+      alert('Please enter a YouTube URL');
       return;
     }
 
     const videoId = extractYoutubeId(youtubeLink);
     if (!videoId) {
-      alert("Invalid YouTube URL");
+      alert('Invalid YouTube URL');
       return;
     }
 
-    const type = youtubeLink.includes("/shorts/") ? "shorts" : "video";
-    const title = videoInfo?.title || "Educational Video";
-    const description = videoInfo?.description || "";
-    const channelName = videoInfo?.author || "YouTube";
+    const type = youtubeLink.includes('/shorts/') ? 'shorts' : 'video';
+    const title = videoInfo?.title || 'Educational Video';
+    const description = videoInfo?.description || '';
+    const channelName = videoInfo?.author || 'YouTube';
 
     setUploading(true);
     try {
-      const { error } = await supabase.from("videos").insert({
-        user_id: ADMIN_USER_ID,
-        youtube_video_id: videoId,
-        status: "pending",
-        type: type,
-        description: description || title,
-        title: title,
-        channel_name: channelName,
-        thumbnail: videoInfo?.thumbnail || "",
-      });
+      // 1. إضافة الفيديو
+      const { data, error } = await supabase
+        .from('videos')
+        .insert({
+          user_id: ADMIN_USER_ID,
+          youtube_video_id: videoId,
+          status: 'pending',
+          type: type,
+          description: description || title,
+          title: title,
+          channel_name: channelName,
+          thumbnail: videoInfo?.thumbnail || '',
+          likes_count: 0,
+          views_count: 0,
+        })
+        .select();
 
       if (error) throw error;
 
-      setYoutubeLink("");
+      // 2. مراجعة تلقائية بواسطة Chatbot
+      if (data && data[0]) {
+        const video = data[0];
+        const { status, analysis } = await autoReviewVideo(videoId);
+        
+        if (status === 'approved' || status === 'rejected') {
+          await supabase
+            .from('videos')
+            .update({ 
+              status: status,
+              admin_notes: analysis?.isEducational 
+                ? '✅ Auto-approved (educational content)' 
+                : '❌ Auto-rejected (non-educational)'
+            })
+            .eq('id', video.id);
+        }
+      }
+
+      setYoutubeLink('');
       setVideoInfo(null);
       onUpload?.();
-      alert("✅ Video added successfully! Waiting for admin approval.");
-      window.location.href = '/'
+      alert('✅ Video added! Auto-review is processing.');
     } catch (error) {
-      console.error("Error:", error);
-      alert("❌ Error: " + error.message);
+      console.error('Error:', error);
+      alert('❌ Error: ' + error.message);
     } finally {
       setUploading(false);
     }
   };
-  const { status, analysis } = await autoReviewVideo(videoId);
-console.log('🤖 Auto-review result:', status, analysis);
 
   const handleLinkChange = (e) => {
     const url = e.target.value;
     setYoutubeLink(url);
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
       fetchVideoInfo(url);
     } else {
       setVideoInfo(null);
@@ -153,7 +172,7 @@ console.log('🤖 Auto-review result:', status, analysis);
                   src={videoInfo.thumbnail}
                   alt="Thumbnail"
                   className="rounded"
-                  style={{ width: "80px", height: "60px", objectFit: "cover" }}
+                  style={{ width: '80px', height: '60px', objectFit: 'cover' }}
                 />
               )}
               <div className="flex-grow-1">
