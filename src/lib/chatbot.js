@@ -340,7 +340,7 @@ export const searchVideosByQuestion = async (question) => {
 };
 
 // ============================================
-// 11. الردود المحسنة (بدون مقدمات)
+// 11. الردود المحسنة (مع المقدمة وفيديو فقط)
 // ============================================
 export const getEnhancedResponse = async (question, previousMessages = []) => {
   const knowledgeMatch = searchKnowledgeBase(question);
@@ -357,14 +357,12 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
   const videos = await advancedSearch(question);
   
   if (videos && videos.length > 0) {
-    // 🔥 عرض الفيديوهات مباشرة (من غير مقدمات)
-    const videoList = videos.map((v, i) => {
-      const keywords = (v.keywords || []).slice(0, 3).join(', ');
-      return `${i + 1}. **${v.title || 'Untitled'}** — ${v.channel_name || 'Unknown'} (${v.views_count || 0} views)`;
-    }).join('\n');
+    const videoList = videos.map((v, i) => 
+      `${i + 1}. **${v.title || 'Untitled'}**`
+    ).join('\n');
     
     return {
-      text: `${videoList}`,
+      text: `🔍 I found these videos based on your question:\n\n${videoList}\n\n💡 Click on any video to watch it!`,
       videos: videos,
       source: 'videos',
       keywords: extractSmartKeywords(question),
