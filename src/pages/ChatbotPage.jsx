@@ -1,27 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHome, FaPaperPlane, FaRobot, FaUser } from 'react-icons/fa';
-import { searchVideosByQuestion } from '../lib/chatbot';
+import { FaHome, FaPaperPlane, FaRobot, FaUser, FaLightbulb } from 'react-icons/fa';
+import { getChatbotResponse, getPopularTopics, analyzeSentiment } from '../lib/chatbot';
 
 const ChatbotPage = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
+  const [popularTopics, setPopularTopics] = useState([]);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    // Welcome message
+    setPopularTopics(getPopularTopics());
     setMessages([
       {
         id: 1,
         sender: 'bot',
-        text: '👋 Hi! I\'m EduBot. Ask me anything and I\'ll find the best educational videos for you!\n\nExamples:\n• "Math tutorials"\n• "Learn Python"\n• "Physics lessons"'
+        text: '👋 Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\n💡 Try asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"\n\nOr click on a topic below! 👇'
       }
     ]);
   }, []);
@@ -40,25 +41,21 @@ const ChatbotPage = () => {
     setLoading(true);
 
     try {
-      const results = await searchVideosByQuestion(input);
-      setSearchResults(results);
-
-      let botResponse = '';
-      if (results.length === 0) {
-        botResponse = '😕 I couldn\'t find any videos matching your question. Try using different keywords!';
-      } else {
-        const videoList = results.map((v, i) => 
-          `${i + 1}. **${v.title || 'Untitled'}** (by ${v.channel_name || 'Unknown'})`
-        ).join('\n');
-        botResponse = `🎬 I found these videos for you:\n\n${videoList}\n\nClick on any video to watch it!`;
-      }
-
-      setMessages(prev => [...prev, {
+      // تحليل المشاعر
+      const sentiment = analyzeSentiment(input);
+      
+      // جلب الرد
+      const response = await getChatbotResponse(input, messages);
+      
+      const botMessage = {
         id: Date.now() + 1,
         sender: 'bot',
-        text: botResponse,
-        videos: results,
-      }]);
+        text: response.text,
+        videos: response.videos || [],
+        sentiment: sentiment,
+      };
+      
+      setMessages(prev => [...prev, botMessage]);
 
     } catch (error) {
       console.error('Error in chatbot:', error);
@@ -66,10 +63,20 @@ const ChatbotPage = () => {
         id: Date.now() + 1,
         sender: 'bot',
         text: '❌ Sorry, I had trouble processing your request. Please try again.',
+        videos: [],
       }]);
     } finally {
       setLoading(false);
+      inputRef.current?.focus();
     }
+  };
+
+  const handleQuickTopic = (query) => {
+    setInput(query);
+    setTimeout(() => {
+      const event = new Event('submit', { bubbles: true });
+      document.querySelector('.chatbot-page-input-form')?.dispatchEvent(event);
+    }, 100);
   };
 
   const handleVideoClick = (video) => {
@@ -84,8 +91,10 @@ const ChatbotPage = () => {
           <FaHome /> Back to Home
         </button>
 
-        <h1 className="chatbot-page-title">🤖 EduBot</h1>
-        <p className="chatbot-page-subtitle">Ask me anything about educational videos!</p>
+        <div className="chatbot-page-header">
+          <h1 className="chatbot-page-title">🤖 EduBot</h1>
+          <p className="chatbot-page-subtitle">Your personal educational video assistant</p>
+        </div>
 
         <div className="chatbot-page-messages">
           {messages.map((msg) => (
@@ -109,11 +118,14 @@ const ChatbotPage = () => {
                         />
                         <div className="chatbot-page-result-info">
                           <strong>{video.title}</strong>
-                          <small>{video.channel_name}</small>
+                          <small>{video.channel_name} • {video.views_count || 0} views</small>
                         </div>
                       </div>
                     ))}
                   </div>
+                )}
+                {msg.sentiment && msg.sentiment === 'positive' && (
+                  <div className="chatbot-page-sentiment positive">😊 Glad you liked that!</div>
                 )}
               </div>
             </div>
@@ -133,8 +145,24 @@ const ChatbotPage = () => {
           <div ref={messagesEndRef} />
         </div>
 
+        <div className="chatbot-page-topics">
+          <span className="chatbot-page-topics-label">
+            <FaLightbulb /> Popular topics:
+          </span>
+          {popularTopics.map((topic, index) => (
+            <button
+              key={index}
+              className="chatbot-page-topic-btn"
+              onClick={() => handleQuickTopic(topic.query)}
+            >
+              {topic.icon} {topic.name}
+            </button>
+          ))}
+        </div>
+
         <form className="chatbot-page-input-form" onSubmit={handleSendMessage}>
           <input
+            ref={inputRef}
             type="text"
             className="chatbot-page-input"
             placeholder="Ask about any topic..."
