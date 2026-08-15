@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaHome, FaPaperPlane, FaRobot, FaUser, FaLightbulb } from 'react-icons/fa';
-import { getChatbotResponse, getPopularTopics, analyzeSentiment } from '../lib/chatbot';
+import { getEnhancedResponse, getPopularTopics, analyzeSentiment } from '../lib/chatbot';
 
 const ChatbotPage = () => {
   const navigate = useNavigate();
