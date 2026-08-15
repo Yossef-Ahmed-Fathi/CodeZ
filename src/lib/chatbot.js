@@ -360,7 +360,7 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
     
     
     return {
-      text: `🔍 I found these videos based on your question:\n\n${videoList}\n\n💡 Click on any video to watch it!`,
+      text: `🔍 I found these videos based on your question:\n\n💡 Click on any video to watch it!`,
       videos: videos,
       source: 'videos',
       keywords: extractSmartKeywords(question),
