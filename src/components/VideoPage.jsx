@@ -8,7 +8,7 @@ const VideoPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [video, setVideo] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
   const [error, setError] = useState('');
 
   useEffect(() => {
