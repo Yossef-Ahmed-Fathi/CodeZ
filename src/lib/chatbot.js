@@ -55,7 +55,36 @@ const knowledgeBase = [
 ];
 
 // ============================================
-// 2. تحليل السؤال واستخراج الكلمات المفتاحية
+// 2. تحليل المحتوى التعليمي (للمراجعة التلقائية)
+// ============================================
+export const analyzeVideoContent = async (videoId) => {
+  try {
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    );
+    const data = await response.json();
+
+    const keywords = extractKeywords(data.title + ' ' + (data.author_name || ''));
+    
+    return {
+      title: data.title || '',
+      author: data.author_name || '',
+      keywords: keywords,
+      isEducational: detectEducational(keywords, data.title),
+    };
+  } catch (error) {
+    console.error('Error analyzing video:', error);
+    return {
+      title: '',
+      author: '',
+      keywords: [],
+      isEducational: false,
+    };
+  }
+};
+
+// ============================================
+// 3. استخراج الكلمات المفتاحية
 // ============================================
 const extractKeywords = (text) => {
   const stopWords = ['the', 'and', 'or', 'for', 'to', 'of', 'in', 'on', 'at', 'with', 'without', 'about', 'from', 'by', 'into', 'through', 'during', 'including'];
@@ -66,59 +95,55 @@ const extractKeywords = (text) => {
 };
 
 // ============================================
-// 3. البحث عن فيديوهات (Semantic Search)
+// 4. اكتشاف المحتوى التعليمي
 // ============================================
-export const searchVideosByQuestion = async (question) => {
+const detectEducational = (keywords, title) => {
+  const educationalWords = [
+    'learn', 'study', 'education', 'lesson', 'course', 'tutorial',
+    'training', 'school', 'college', 'university', 'teacher',
+    'math', 'science', 'history', 'physics', 'chemistry', 'biology',
+    'programming', 'coding', 'development', 'design', 'engineering',
+    'english', 'language', 'grammar', 'writing', 'reading',
+    'تعلم', 'درس', 'شرح', 'مدرسة', 'جامعة', 'تعليم', 'تدريس'
+  ];
+  
+  const combinedText = keywords.join(' ') + ' ' + title.toLowerCase();
+  return educationalWords.some(word => combinedText.includes(word));
+};
+
+// ============================================
+// 5. المراجعة التلقائية للفيديو (Auto-Review)
+// ============================================
+export const autoReviewVideo = async (videoId) => {
   try {
-    const { data: videos, error } = await supabase
+    const analysis = await analyzeVideoContent(videoId);
+    
+    let status = 'pending';
+    if (analysis.isEducational) {
+      status = 'approved';
+    } else if (analysis.keywords.length < 2) {
+      status = 'rejected';
+    }
+
+    const { error } = await supabase
       .from('videos')
-      .select('*')
-      .eq('status', 'approved')
-      .limit(20);
+      .update({
+        status: status,
+        admin_notes: analysis.isEducational ? '✅ Auto-approved (educational)' : '⏳ Pending review',
+      })
+      .eq('youtube_video_id', videoId);
 
     if (error) throw error;
 
-    if (!videos || videos.length === 0) {
-      return [];
-    }
-
-    const questionWords = extractKeywords(question);
-    console.log('🔍 Question words:', questionWords);
-
-    const ranked = videos.map(video => {
-      const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
-      const videoWords = extractKeywords(videoText);
-      
-      // حساب درجة التشابه
-      let matchCount = 0;
-      let matchScore = 0;
-      
-      questionWords.forEach(qWord => {
-        videoWords.forEach(vWord => {
-          if (vWord.includes(qWord) || qWord.includes(vWord)) {
-            matchCount++;
-            matchScore += Math.max(vWord.length, qWord.length) / 10;
-          }
-        });
-      });
-      
-      const score = matchCount > 0 ? (matchScore / Math.max(questionWords.length, 1)) * 100 : 0;
-      
-      return { ...video, score };
-    });
-
-    ranked.sort((a, b) => b.score - a.score);
-
-    return ranked.slice(0, 5).filter(v => v.score > 10);
-
+    return { status, analysis };
   } catch (error) {
-    console.error('Error searching videos:', error);
-    return [];
+    console.error('Error auto-reviewing video:', error);
+    return { status: 'pending', analysis: null };
   }
 };
 
 // ============================================
-// 4. البحث في قاعدة المعرفة (Knowledge Base)
+// 6. البحث في قاعدة المعرفة (Knowledge Base)
 // ============================================
 const searchKnowledgeBase = (question) => {
   const words = extractKeywords(question);
@@ -148,7 +173,58 @@ const searchKnowledgeBase = (question) => {
 };
 
 // ============================================
-// 5. توليد ردود ديناميكية
+// 7. البحث عن فيديوهات (Semantic Search)
+// ============================================
+export const searchVideosByQuestion = async (question) => {
+  try {
+    const { data: videos, error } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('status', 'approved')
+      .limit(20);
+
+    if (error) throw error;
+
+    if (!videos || videos.length === 0) {
+      return [];
+    }
+
+    const questionWords = extractKeywords(question);
+    console.log('🔍 Question words:', questionWords);
+
+    const ranked = videos.map(video => {
+      const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
+      const videoWords = extractKeywords(videoText);
+      
+      let matchCount = 0;
+      let matchScore = 0;
+      
+      questionWords.forEach(qWord => {
+        videoWords.forEach(vWord => {
+          if (vWord.includes(qWord) || qWord.includes(vWord)) {
+            matchCount++;
+            matchScore += Math.max(vWord.length, qWord.length) / 10;
+          }
+        });
+      });
+      
+      const score = matchCount > 0 ? (matchScore / Math.max(questionWords.length, 1)) * 100 : 0;
+      
+      return { ...video, score };
+    });
+
+    ranked.sort((a, b) => b.score - a.score);
+
+    return ranked.slice(0, 5).filter(v => v.score > 10);
+
+  } catch (error) {
+    console.error('Error searching videos:', error);
+    return [];
+  }
+};
+
+// ============================================
+// 8. توليد ردود ديناميكية
 // ============================================
 const generateDynamicResponse = (question, videos) => {
   if (!videos || videos.length === 0) {
@@ -169,7 +245,7 @@ const generateDynamicResponse = (question, videos) => {
 };
 
 // ============================================
-// 6. الدالة الرئيسية للـ Chatbot
+// 9. الدالة الرئيسية للـ Chatbot
 // ============================================
 export const getChatbotResponse = async (question, previousMessages = []) => {
   // 1. البحث في قاعدة المعرفة المخصصة
@@ -203,7 +279,7 @@ export const getChatbotResponse = async (question, previousMessages = []) => {
 };
 
 // ============================================
-// 7. تحليل المشاعر (Sentiment Analysis) - بسيط
+// 10. تحليل المشاعر (Sentiment Analysis)
 // ============================================
 export const analyzeSentiment = (text) => {
   const positiveWords = ['good', 'great', 'awesome', 'excellent', 'amazing', 'love', 'like', 'thanks', 'thank you'];
@@ -223,7 +299,7 @@ export const analyzeSentiment = (text) => {
 };
 
 // ============================================
-// 8. اقتراح مواضيع شائعة
+// 11. اقتراح مواضيع شائعة
 // ============================================
 export const getPopularTopics = () => {
   return [
