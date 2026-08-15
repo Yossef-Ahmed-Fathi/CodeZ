@@ -29,6 +29,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const [showControls, setShowControls] = useState(false);
 
   const username = video.users?.username || 'user';
+  const userId = 'your-admin-user-id-here';
 
   useImperativeHandle(ref, () => ({
     handleTogglePlay: () => {
@@ -45,11 +46,10 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     }
   }));
 
-  // Like System
+  // ===== Like System =====
   useEffect(() => {
     const checkLike = async () => {
       try {
-        const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
         const { data } = await supabase
           .from('likes')
           .select('*')
@@ -63,7 +63,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   }, [video.id]);
 
   const handleLike = async () => {
-    const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
     try {
       if (isLiked) {
         await supabase
@@ -73,12 +72,23 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
           .eq('user_id', userId);
         setLikesCount(prev => prev - 1);
         setIsLiked(false);
+        
+        await supabase
+          .from('videos')
+          .update({ likes_count: likesCount - 1 })
+          .eq('id', video.id);
       } else {
         await supabase
           .from('likes')
           .insert({ video_id: video.id, user_id: userId });
         setLikesCount(prev => prev + 1);
         setIsLiked(true);
+        
+        await supabase
+          .from('videos')
+          .update({ likes_count: likesCount + 1 })
+          .eq('id', video.id);
+        
         setShowFireworks(true);
         setLikeAnimation(true);
         setTimeout(() => {
@@ -91,22 +101,23 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     }
   };
 
-  // Views System
+  // ===== Views System =====
   useEffect(() => {
     if (hasViewed || !isVisible) return;
 
     const recordView = async () => {
       try {
-        const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
         await supabase
           .from('views')
           .insert({ video_id: video.id, user_id: userId });
-        setViewsCount(prev => prev + 1);
+        
+        const newViewsCount = viewsCount + 1;
+        setViewsCount(newViewsCount);
         setHasViewed(true);
         
         await supabase
           .from('videos')
-          .update({ views_count: viewsCount + 1 })
+          .update({ views_count: newViewsCount })
           .eq('id', video.id);
       } catch (error) {
         console.error('Error recording view:', error);
@@ -115,9 +126,9 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
 
     const timer = setTimeout(recordView, 2000);
     return () => clearTimeout(timer);
-  }, [video.id, hasViewed, isVisible, viewsCount]);
+  }, [video.id, hasViewed, isVisible]);
 
-  // YouTube Player
+  // ===== YouTube Player =====
   useEffect(() => {
     if (!playerRef.current || !playerInitialized.current) return;
     if (isVisible) {
@@ -461,7 +472,6 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
         <span>Swipe up</span>
       </div>
 
-      {/* ===== Side Actions - ثابتة جوه الفيديو ===== */}
       <div className="side-actions">
         <div className="action-item" onClick={handleLike}>
           <FaHeart 
