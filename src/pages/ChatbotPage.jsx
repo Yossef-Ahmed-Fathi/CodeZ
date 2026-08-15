@@ -25,6 +25,11 @@ const ChatbotPage = () => {
         text: '👋 Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\n💡 Try asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"\n\nOr click on a topic below! 👇'
       }
     ]);
+    
+    // 🔥 Auto-focus بعد تحميل الصفحة
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 500);
   }, []);
 
   const handleSendMessage = async (e) => {
@@ -41,10 +46,7 @@ const ChatbotPage = () => {
     setLoading(true);
 
     try {
-      // تحليل المشاعر
       const sentiment = analyzeSentiment(input);
-      
-      // جلب الرد باستخدام getEnhancedResponse
       const response = await getEnhancedResponse(input, messages);
       
       const botMessage = {
@@ -57,6 +59,11 @@ const ChatbotPage = () => {
       
       setMessages(prev => [...prev, botMessage]);
 
+      // 🔥 Auto-focus بعد الرد
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+
     } catch (error) {
       console.error('Error in chatbot:', error);
       setMessages(prev => [...prev, {
@@ -65,9 +72,13 @@ const ChatbotPage = () => {
         text: '❌ Sorry, I had trouble processing your request. Please try again.',
         videos: [],
       }]);
+      
+      // 🔥 Auto-focus حتى لو في خطأ
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
     }
   };
 
