@@ -2,52 +2,64 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-
-    <!-- SEO -->
-    <title>CodeZ - Educational Reels</title>
-    <meta
-      name="description"
-      content="Educational video platform - Watch educational videos from YouTube in a seamless reel format"
-    />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- Title & Description -->
+    <title>CodeZ - Educational Reels Platform | Learn with YouTube Shorts</title>
+    <meta name="description" content="CodeZ: The educational video platform that curates the best learning content from YouTube. Watch educational reels, shorts, and full videos in a seamless TikTok-style feed." />
+    <meta name="keywords" content="educational videos, learning, YouTube, reels, shorts, math, science, programming, languages, history" />
+    <meta name="robots" content="index, follow" />
+    
     <!-- Open Graph -->
-    <meta property="og:title" content="CodeZ - Educational Reels" />
-    <meta
-      property="og:description"
-      content="Watch educational videos from YouTube in a seamless reel format"
-    />
-    <meta property="og:type" content="website" />
+    <meta property="og:title" content="CodeZ - Educational Reels Platform" />
+    <meta property="og:description" content="Curated educational videos from YouTube in a seamless reel format." />
+    <meta property="og:image" content="https://codez.vercel.app/og-image.jpg" />
     <meta property="og:url" content="https://codez.vercel.app" />
-
+    <meta property="og:type" content="website" />
+    
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CodeZ - Educational Reels Platform" />
+    <meta name="twitter:description" content="Curated educational videos from YouTube in a seamless reel format." />
+    <meta name="twitter:image" content="https://codez.vercel.app/og-image.jpg" />
+    
+    <!-- Schema.org (WebSite) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "CodeZ",
+      "description": "Educational video platform curating YouTube content in reel format.",
+      "url": "https://codez.vercel.app",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://codez.vercel.app/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>
-
-    <!-- Service Worker Registration (for PWA) -->
     <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then(() => console.log("✅ Service Worker registered"))
-          .catch((err) => console.log("❌ Service Worker error:", err));
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => console.log('✅ Service Worker registered'))
+          .catch((err) => console.log('❌ Service Worker error:', err));
       }
     </script>
-
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
