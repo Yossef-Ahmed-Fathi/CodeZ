@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import AdminLogin from './pages/AdminLogin';
 import FAQPage from './pages/FAQPage';
+import ChatbotPage from './pages/ChatbotPage';
 import VideoPage from './components/VideoPage';
 import VisitCounter from './components/VisitCounter';
 
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
       <Route path="/faq" element={<FAQPage />} />
+      <Route path="/chatbot" element={<ChatbotPage />} />
       <Route path="/video/:id/:slug" element={<VideoPage />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
