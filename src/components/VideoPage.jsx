@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { FaArrowLeft, FaPlay } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
 
 const VideoPage = () => {
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const navigate = useNavigate();
   const [video, setVideo] = useState(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -26,6 +26,11 @@ const VideoPage = () => {
           return;
         }
 
+        const correctSlug = data.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'video';
+        if (slug !== correctSlug) {
+          navigate(`/video/${data.id}/${correctSlug}`, { replace: true });
+        }
+
         setVideo(data);
       } catch (error) {
         console.error('Error fetching video:', error);
@@ -36,7 +41,7 @@ const VideoPage = () => {
     };
 
     fetchVideo();
-  }, [id]);
+  }, [id, slug, navigate]);
 
   if (loading) {
     return (
@@ -61,12 +66,10 @@ const VideoPage = () => {
 
   return (
     <div className="video-page-container">
-      {/* Back Button */}
       <button className="video-page-back" onClick={() => navigate('/')}>
         <FaArrowLeft /> Back to Reels
       </button>
 
-      {/* Video Player */}
       <div className="video-page-player">
         <iframe
           src={`https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1&rel=0`}
@@ -77,7 +80,6 @@ const VideoPage = () => {
         />
       </div>
 
-      {/* Video Info */}
       <div className="video-page-info">
         <h2>{video.title || 'Untitled'}</h2>
         <p>{video.description || 'No description available'}</p>
