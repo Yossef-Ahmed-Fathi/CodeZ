@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { FaYoutube, FaUpload, FaSpinner } from 'react-icons/fa';
-import { autoReviewVideo } from '../lib/chatbot';
+import { autoReviewVideo, processVideo } from '../lib/chatbot';
 
 const UploadVideo = ({ onUpload }) => {
   const [youtubeLink, setYoutubeLink] = useState('');
@@ -93,7 +93,7 @@ const UploadVideo = ({ onUpload }) => {
       if (error) throw error;
 
       if (data && data[0]) {
-        const video = data[0];
+        // 1. مراجعة تلقائية
         const { status, analysis } = await autoReviewVideo(videoId);
         
         if (status === 'approved' || status === 'rejected') {
@@ -105,14 +105,20 @@ const UploadVideo = ({ onUpload }) => {
                 ? '✅ Auto-approved (educational content)' 
                 : '❌ Auto-rejected (non-educational)'
             })
-            .eq('id', video.id);
+            .eq('id', data[0].id);
+        }
+
+        // 2. معالجة الفيديو واستخراج الكلمات المفتاحية
+        const processed = await processVideo(videoId);
+        if (processed) {
+          console.log('✅ Video processed with keywords:', processed.keywords);
         }
       }
 
       setYoutubeLink('');
       setVideoInfo(null);
       onUpload?.();
-      alert('✅ Video added! Auto-review is processing.');
+      alert('✅ Video added! Auto-review and keyword extraction completed.');
     } catch (error) {
       console.error('Error:', error);
       alert('❌ Error: ' + error.message);
@@ -151,7 +157,7 @@ const UploadVideo = ({ onUpload }) => {
             />
           </div>
           <small className="text-muted d-block mt-1">
-            💡 Video info will be fetched automatically from YouTube
+            💡 Video will be automatically analyzed for keywords and summary
           </small>
         </div>
 
