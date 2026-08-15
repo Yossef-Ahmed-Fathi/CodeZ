@@ -11,19 +11,17 @@ const Chatbot = ({ isOpen, onClose }) => {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // رسالة ترحيب
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([
         {
           id: 1,
           sender: 'bot',
-          text: '👋 Hi! I\'m your educational video assistant. Ask me anything and I\'ll find the best videos for you!',
+          text: '👋 Hi! I\'m EduBot. Ask me anything and I\'ll find the best educational videos for you!',
         }
       ]);
     }
@@ -33,7 +31,6 @@ const Chatbot = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // إضافة رسالة المستخدم
     const userMessage = {
       id: Date.now(),
       sender: 'user',
@@ -44,11 +41,9 @@ const Chatbot = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      // البحث عن فيديوهات
       const results = await searchVideosByQuestion(input);
       setSearchResults(results);
 
-      // بناء رد الـ Chatbot
       let botResponse = '';
       
       if (results.length === 0) {
@@ -81,7 +76,8 @@ const Chatbot = ({ isOpen, onClose }) => {
   };
 
   const handleVideoClick = (video) => {
-    navigate(`/video/${video.id}`);
+    const slug = video.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'video';
+    navigate(`/video/${video.id}/${slug}`);
     onClose();
   };
 
@@ -90,7 +86,6 @@ const Chatbot = ({ isOpen, onClose }) => {
   return (
     <div className="chatbot-overlay" onClick={onClose}>
       <div className="chatbot-container" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="chatbot-header">
           <div className="chatbot-header-info">
             <FaRobot className="chatbot-icon" />
@@ -104,7 +99,6 @@ const Chatbot = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Messages */}
         <div className="chatbot-messages">
           {messages.map((msg) => (
             <div key={msg.id} className={`chatbot-message ${msg.sender}`}>
@@ -151,7 +145,6 @@ const Chatbot = ({ isOpen, onClose }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
         <form className="chatbot-input-form" onSubmit={handleSendMessage}>
           <input
             type="text"
