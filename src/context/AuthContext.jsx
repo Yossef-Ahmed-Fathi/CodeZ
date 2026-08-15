@@ -61,15 +61,18 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (data.user) {
-      await supabase
+      // استخدام upsert بدل insert + onConflict
+      const { error: upsertError } = await supabase
         .from('users')
-        .insert({
+        .upsert({
           id: data.user.id,
           username: username || email.split('@')[0],
           is_admin: false,
-        })
-        .onConflict('id')
-        .merge();
+        }, { onConflict: 'id' });
+
+      if (upsertError) {
+        console.error('Error upserting user:', upsertError);
+      }
     }
 
     return { data, error };
