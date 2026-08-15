@@ -243,7 +243,7 @@ const HomePage = () => {
             <FaQuestionCircle />
             <span>FAQ</span>
           </button>
-          <button className="footer-menu-item" onClick={() => setIsChatOpen(!isChatOpen)}>
+          <button className="footer-menu-item" onClick={() => navigate('/chatbot')}>
             <FaCommentDots />
             <span>Chatbot</span>
           </button>
