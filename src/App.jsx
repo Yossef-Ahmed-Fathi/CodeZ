@@ -8,7 +8,7 @@ import Chatbot from './components/Chatbot';
 import VisitCounter from './components/VisitCounter';
 import { FaCommentDots } from 'react-icons/fa';
 
-const isAdminLoggedIn = () => { 
+const isAdminLoggedIn = () => {
   return localStorage.getItem('adminLoggedIn') === 'true';
 };
 
@@ -17,23 +17,6 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/admin-login" replace />;
   }
   return children;
-};
-
-// Logo Component
-const Logo = ({ size = 'md' }) => {
-  const sizes = {
-    sm: '24px',
-    md: '32px',
-    lg: '48px'
-  };
-  
-  return (
-    <div className="logo" style={{ fontSize: sizes[size] }}>
-      <span className="logo-code">C</span>
-      <span className="logo-z">Z</span>
-      <span className="logo-dot">.</span>
-    </div>
-  );
 };
 
 function App() {
