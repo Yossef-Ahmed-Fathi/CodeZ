@@ -19,12 +19,32 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// Logo Component
+const Logo = ({ size = 'md' }) => {
+  const sizes = {
+    sm: '24px',
+    md: '32px',
+    lg: '48px'
+  };
+  
+  return (
+    <div className="logo" style={{ fontSize: sizes[size] }}>
+      <span className="logo-code">C</span>
+      <span className="logo-z">Z</span>
+      <span className="logo-dot">.</span>
+    </div>
+  );
+};
+
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
     <BrowserRouter>
       <VisitCounter />
+      
+      {/* Brand Tagline */}
+      <div className="brand-tagline">🎓 Learn. Grow. CodeZ.</div>
       
       <button 
         className="chatbot-toggle-btn"
@@ -37,7 +57,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Feed />} />
-        <Route path="/video/:id" element={<VideoPage />} />
+        <Route path="/video/:id/:slug" element={<VideoPage />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route
           path="/admin"
