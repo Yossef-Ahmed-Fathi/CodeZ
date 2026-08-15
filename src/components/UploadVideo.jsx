@@ -4,7 +4,7 @@ import { FaYoutube, FaUpload, FaSpinner } from 'react-icons/fa';
 import { autoReviewVideo, processVideo } from '../lib/chatbot';
 
 const UploadVideo = ({ onUpload }) => {
-  const [youtubeLink, setYoutubeLink] = useState('');
+  const [youtubeLink, setYoutubeLink] = useState(''); 
   const [uploading, setUploading] = useState(false);
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
