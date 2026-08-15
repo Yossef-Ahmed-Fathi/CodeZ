@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Feed from './components/Feed';
+import HomePage from './pages/HomePage';
+import AccountPage from './pages/AccountPage';
+import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
-import AdminLogin from './components/AdminLogin';
+import AdminLogin from './pages/AdminLogin';
+import FAQPage from './pages/FAQPage';
 import VideoPage from './components/VideoPage';
-import AccountPage from './components/AccountPage';
-import LoginPage from './components/LoginPage';
 import VisitCounter from './components/VisitCounter';
 
 const ProtectedRoute = ({ children }) => {
@@ -24,20 +25,27 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+      <Route path="/faq" element={<FAQPage />} />
+      <Route path="/video/:id/:slug" element={<VideoPage />} />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <VisitCounter />
-        <Routes>
-          <Route path="/" element={<Feed />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
-          <Route path="/video/:id/:slug" element={<VideoPage />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
   );
