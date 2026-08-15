@@ -1,16 +1,289 @@
 import { supabase } from './supabase';
 
 // ============================================
-// 1. قاعدة المعرفة المخصصة (Custom Knowledge Base)
+// 1. جلب محتوى الفيديو بالكامل
+// ============================================
+export const fetchVideoContent = async (videoId) => {
+  try {
+    // 1. جلب المعلومات الأساسية من YouTube oEmbed
+    const oembedResponse = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    );
+    const oembedData = await oembedResponse.json();
+
+    // 2. جلب الوصف من صفحة الفيديو
+    const pageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+    const html = await pageResponse.text();
+    
+    // استخراج الوصف
+    const descMatch = html.match(/"shortDescription":"([^"]+)"/);
+    const description = descMatch ? decodeURIComponent(descMatch[1]) : '';
+
+    // استخراج التصنيفات (Tags)
+    const tagsMatch = html.match(/"keywords":"([^"]+)"/);
+    const tags = tagsMatch ? decodeURIComponent(tagsMatch[1]).split(',') : [];
+
+    // استخراج التعليقات (من الـ API)
+    // ملاحظة: التعليقات تحتاج API key, هنستخدم بيانات افتراضية للتوضيح
+
+    return {
+      title: oembedData.title || '',
+      author: oembedData.author_name || '',
+      thumbnail: oembedData.thumbnail_url || '',
+      description: description,
+      tags: tags,
+      channel_id: oembedData.author_url?.split('/').pop() || '',
+    };
+  } catch (error) {
+    console.error('Error fetching video content:', error);
+    return null;
+  }
+};
+
+// ============================================
+// 2. استخراج الكلمات المفتاحية الذكية (TF-IDF Style)
+// ============================================
+export const extractSmartKeywords = (title, description, tags = []) => {
+  // 1. دمج النصوص
+  const fullText = `${title} ${description} ${tags.join(' ')}`.toLowerCase();
+  
+  // 2. تقسيم إلى كلمات
+  const words = fullText.match(/[a-z0-9\u0600-\u06FF]+/g) || [];
+  
+  // 3. إزالة الكلمات الشائعة (Stop Words)
+  const stopWords = [
+    'the', 'and', 'or', 'for', 'to', 'of', 'in', 'on', 'at', 'with', 'without',
+    'about', 'from', 'by', 'into', 'through', 'during', 'including', 'using',
+    'this', 'that', 'these', 'those', 'then', 'than', 'there', 'their', 'they',
+    'what', 'which', 'who', 'whom', 'whose', 'how', 'why', 'where', 'when',
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'must', 'shall', 'can', 'etc', 'etcetera'
+  ];
+  
+  const filteredWords = words.filter(w => 
+    w.length > 2 && !stopWords.includes(w) && !/^[0-9]+$/.test(w)
+  );
+  
+  // 4. حساب التكرار (Frequency)
+  const frequencyMap = {};
+  filteredWords.forEach(word => {
+    frequencyMap[word] = (frequencyMap[word] || 0) + 1;
+  });
+  
+  // 5. فرز حسب الأهمية (تكرار أعلى = أهمية أعلى)
+  const sortedWords = Object.entries(frequencyMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([word]) => word);
+  
+  return sortedWords;
+};
+
+// ============================================
+// 3. توليد ملخص تلقائي للفيديو
+// ============================================
+export const generateSummary = (title, description, keywords) => {
+  if (!description) return title;
+  
+  // خذ أول 100 كلمة من الوصف
+  const words = description.split(' ');
+  const shortDesc = words.slice(0, 30).join(' ') + (words.length > 30 ? '...' : '');
+  
+  // بناء ملخص من الكلمات المفتاحية
+  const keywordStr = keywords.slice(0, 5).join(', ');
+  
+  return `${shortDesc}\n\n📌 Keywords: ${keywordStr}`;
+};
+
+// ============================================
+// 4. معالجة الفيديو (استخراج المحتوى والكلمات)
+// ============================================
+export const processVideo = async (videoId) => {
+  try {
+    // 1. جلب محتوى الفيديو
+    const content = await fetchVideoContent(videoId);
+    if (!content) return null;
+    
+    // 2. استخراج الكلمات المفتاحية الذكية
+    const keywords = extractSmartKeywords(
+      content.title,
+      content.description,
+      content.tags
+    );
+    
+    // 3. توليد الملخص
+    const summary = generateSummary(content.title, content.description, keywords);
+    
+    // 4. حفظ في قاعدة البيانات
+    const { data, error } = await supabase
+      .from('videos')
+      .update({
+        keywords: keywords,
+        summary: summary,
+        processed: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('youtube_video_id', videoId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // 5. تحديث جدول الكلمات المفتاحية
+    for (const keyword of keywords) {
+      const { data: existing } = await supabase
+        .from('keyword_index')
+        .select('*')
+        .eq('keyword', keyword)
+        .single();
+      
+      if (existing) {
+        // تحديث التكرار
+        const videoIds = existing.video_ids || [];
+        if (!videoIds.includes(videoId)) {
+          videoIds.push(videoId);
+        }
+        await supabase
+          .from('keyword_index')
+          .update({
+            frequency: existing.frequency + 1,
+            video_ids: videoIds,
+          })
+          .eq('id', existing.id);
+      } else {
+        // إضافة كلمة جديدة
+        await supabase
+          .from('keyword_index')
+          .insert({
+            keyword: keyword,
+            frequency: 1,
+            video_ids: [videoId],
+          });
+      }
+    }
+    
+    return { data, keywords, summary };
+  } catch (error) {
+    console.error('Error processing video:', error);
+    return null;
+  }
+};
+
+// ============================================
+// 5. البحث المتقدم باستخدام الكلمات المفتاحية
+// ============================================
+export const advancedSearch = async (query) => {
+  try {
+    const queryWords = extractSmartKeywords(query, '');
+    
+    // البحث في جدول الكلمات المفتاحية
+    const { data: keywordMatches, error } = await supabase
+      .from('keyword_index')
+      .select('*')
+      .in('keyword', queryWords);
+    
+    if (error || !keywordMatches || keywordMatches.length === 0) {
+      // لو مفيش تطابق، جرب البحث العادي
+      return searchVideosByQuestion(query);
+    }
+    
+    // تجميع video_ids من الكلمات المطابقة
+    const videoIdSet = new Set();
+    keywordMatches.forEach(kw => {
+      (kw.video_ids || []).forEach(id => {
+        videoIdSet.add(id);
+      });
+    });
+    
+    const videoIds = Array.from(videoIdSet);
+    if (videoIds.length === 0) {
+      return searchVideosByQuestion(query);
+    }
+    
+    // جلب الفيديوهات
+    const { data: videos, error: videosError } = await supabase
+      .from('videos')
+      .select('*')
+      .in('id', videoIds)
+      .eq('status', 'approved');
+    
+    if (videosError) throw videosError;
+    
+    // ترتيب حسب عدد الكلمات المفتاحية المطابقة
+    const ranked = videos.map(video => {
+      let matchCount = 0;
+      (video.keywords || []).forEach(kw => {
+        if (queryWords.includes(kw)) matchCount++;
+      });
+      return { ...video, score: matchCount };
+    });
+    
+    ranked.sort((a, b) => b.score - a.score);
+    
+    return ranked.slice(0, 5).filter(v => v.score > 0);
+    
+  } catch (error) {
+    console.error('Error in advanced search:', error);
+    return searchVideosByQuestion(query);
+  }
+};
+
+// ============================================
+// 6. تحسين الردود بناءً على الكلمات المفتاحية
+// ============================================
+export const getEnhancedResponse = async (question, previousMessages = []) => {
+  // 1. استخراج الكلمات المفتاحية من السؤال
+  const questionWords = extractSmartKeywords(question, '');
+  
+  // 2. البحث المتقدم
+  const videos = await advancedSearch(question);
+  
+  // 3. قاعدة المعرفة المخصصة
+  const knowledgeMatch = searchKnowledgeBase(question);
+  
+  let response = '';
+  let source = '';
+  
+  if (knowledgeMatch) {
+    response = knowledgeMatch.response;
+    source = 'knowledge';
+  } else if (videos && videos.length > 0) {
+    const videoList = videos.map((v, i) => {
+      const keywords = (v.keywords || []).slice(0, 3).join(', ');
+      return `${i + 1}. **${v.title || 'Untitled'}**\n   📺 ${v.channel_name || 'Unknown'}\n   🔑 ${keywords || 'No keywords'}\n   👁️ ${v.views_count || 0} views`;
+    }).join('\n\n');
+    
+    response = `🔍 I found these videos based on your question:\n\n${videoList}\n\n💡 Click on any video to watch it!`;
+    source = 'videos';
+  } else {
+    response = '🤔 I couldn\'t find anything matching your question. Try using different keywords!\n\n💡 Examples:\n• "Math tutorials"\n• "Learn Python"\n• "Physics lessons"';
+    source = 'fallback';
+  }
+  
+  return {
+    text: response,
+    videos: videos || [],
+    source: source,
+    keywords: questionWords,
+  };
+};
+
+// ============================================
+// 7. قاعدة المعرفة المخصصة
 // ============================================
 const knowledgeBase = [
   {
     keywords: ['what is codez', 'about codez', 'platform'],
-    response: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format. We help you discover educational videos easily!'
+    response: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format. We use smart AI to analyze and categorize videos!'
   },
   {
     keywords: ['how to add video', 'upload', 'submit video'],
-    response: 'To add a video, click the + button on the home page, paste a YouTube URL, and our AI will automatically review it for educational quality. Once approved, it will appear in the feed!'
+    response: 'To add a video, click the + button on the home page, paste a YouTube URL, and our AI will automatically analyze it for educational quality. The system extracts keywords and generates a summary!'
+  },
+  {
+    keywords: ['how it works', 'algorithm', 'smart'],
+    response: 'Our AI analyzes video titles, descriptions, and tags to extract smart keywords. It then builds a knowledge graph to help you find exactly what you\'re looking for!'
   },
   {
     keywords: ['free', 'cost', 'price', 'pay'],
@@ -18,146 +291,34 @@ const knowledgeBase = [
   },
   {
     keywords: ['who are you', 'what are you', 'chatbot', 'edubot'],
-    response: 'I\'m EduBot! Your personal educational video assistant. I help you find the best educational videos based on your questions.'
-  },
-  {
-    keywords: ['math', 'mathematics', 'algebra', 'calculus'],
-    response: 'We have many math videos! Topics include Algebra, Calculus, Geometry, Statistics, and more. What specific math topic are you interested in?'
-  },
-  {
-    keywords: ['science', 'physics', 'chemistry', 'biology'],
-    response: 'We cover Physics, Chemistry, Biology, Astronomy, and Earth Sciences. Which science subject interests you?'
-  },
-  {
-    keywords: ['programming', 'coding', 'python', 'javascript', 'react'],
-    response: 'We have programming tutorials for Python, JavaScript, React, HTML/CSS, and many more. What language or framework are you learning?'
-  },
-  {
-    keywords: ['english', 'language', 'grammar', 'writing'],
-    response: 'We have English language lessons including grammar, writing, speaking, and vocabulary. What aspect of English are you looking for?'
-  },
-  {
-    keywords: ['history', 'ancient', 'civilization'],
-    response: 'Our history videos cover Ancient Civilizations, World Wars, Modern History, and Cultural Studies. What historical period interests you?'
+    response: 'I\'m EduBot! A smart AI assistant that analyzes educational videos and helps you find exactly what you need. I use keyword extraction and semantic search to understand your questions!'
   },
   {
     keywords: ['thanks', 'thank you', 'great', 'awesome'],
-    response: 'You\'re welcome! 😊 I\'m always here to help you find great educational content. Keep learning! 🚀'
+    response: 'You\'re welcome! 😊 I\'m constantly learning and improving. Keep asking questions and I\'ll get even smarter! 🚀'
   },
   {
     keywords: ['hello', 'hi', 'hey', 'greetings'],
-    response: '👋 Hello! Welcome to CodeZ. I\'m EduBot, your educational video assistant. How can I help you today?'
-  },
-  {
-    keywords: ['bye', 'goodbye', 'see you'],
-    response: '👋 Goodbye! Come back anytime for more educational content. Happy learning! 🎓'
+    response: '👋 Hello! Welcome to CodeZ. I\'m EduBot, your AI educational assistant. I can analyze videos, extract keywords, and help you find exactly what you need!'
   },
 ];
 
 // ============================================
-// 2. تحليل المحتوى التعليمي (للمراجعة التلقائية)
-// ============================================
-export const analyzeVideoContent = async (videoId) => {
-  try {
-    const response = await fetch(
-      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
-    );
-    const data = await response.json();
-
-    const keywords = extractKeywords(data.title + ' ' + (data.author_name || ''));
-    
-    return {
-      title: data.title || '',
-      author: data.author_name || '',
-      keywords: keywords,
-      isEducational: detectEducational(keywords, data.title),
-    };
-  } catch (error) {
-    console.error('Error analyzing video:', error);
-    return {
-      title: '',
-      author: '',
-      keywords: [],
-      isEducational: false,
-    };
-  }
-};
-
-// ============================================
-// 3. استخراج الكلمات المفتاحية
-// ============================================
-const extractKeywords = (text) => {
-  const stopWords = ['the', 'and', 'or', 'for', 'to', 'of', 'in', 'on', 'at', 'with', 'without', 'about', 'from', 'by', 'into', 'through', 'during', 'including'];
-  const words = text.toLowerCase().match(/[a-z0-9\u0600-\u06FF]+/g) || [];
-  return words
-    .filter(w => w.length > 2 && !stopWords.includes(w))
-    .slice(0, 10);
-};
-
-// ============================================
-// 4. اكتشاف المحتوى التعليمي
-// ============================================
-const detectEducational = (keywords, title) => {
-  const educationalWords = [
-    'learn', 'study', 'education', 'lesson', 'course', 'tutorial',
-    'training', 'school', 'college', 'university', 'teacher',
-    'math', 'science', 'history', 'physics', 'chemistry', 'biology',
-    'programming', 'coding', 'development', 'design', 'engineering',
-    'english', 'language', 'grammar', 'writing', 'reading',
-    'تعلم', 'درس', 'شرح', 'مدرسة', 'جامعة', 'تعليم', 'تدريس'
-  ];
-  
-  const combinedText = keywords.join(' ') + ' ' + title.toLowerCase();
-  return educationalWords.some(word => combinedText.includes(word));
-};
-
-// ============================================
-// 5. المراجعة التلقائية للفيديو (Auto-Review)
-// ============================================
-export const autoReviewVideo = async (videoId) => {
-  try {
-    const analysis = await analyzeVideoContent(videoId);
-    
-    let status = 'pending';
-    if (analysis.isEducational) {
-      status = 'approved';
-    } else if (analysis.keywords.length < 2) {
-      status = 'rejected';
-    }
-
-    const { error } = await supabase
-      .from('videos')
-      .update({
-        status: status,
-        admin_notes: analysis.isEducational ? '✅ Auto-approved (educational)' : '⏳ Pending review',
-      })
-      .eq('youtube_video_id', videoId);
-
-    if (error) throw error;
-
-    return { status, analysis };
-  } catch (error) {
-    console.error('Error auto-reviewing video:', error);
-    return { status: 'pending', analysis: null };
-  }
-};
-
-// ============================================
-// 6. البحث في قاعدة المعرفة (Knowledge Base)
+// 8. البحث في قاعدة المعرفة
 // ============================================
 const searchKnowledgeBase = (question) => {
-  const words = extractKeywords(question);
+  const words = extractSmartKeywords(question, '');
   let bestMatch = null;
   let bestScore = 0;
 
   knowledgeBase.forEach(item => {
     let score = 0;
     item.keywords.forEach(keyword => {
-      const keywordWords = extractKeywords(keyword);
+      const keywordWords = extractSmartKeywords(keyword, '');
       keywordWords.forEach(kw => {
         words.forEach(word => {
           if (word.includes(kw) || kw.includes(word)) {
-            score += 2;
+            score += 3;
           }
         });
       });
@@ -173,7 +334,7 @@ const searchKnowledgeBase = (question) => {
 };
 
 // ============================================
-// 7. البحث عن فيديوهات (Semantic Search)
+// 9. البحث العادي (للتوافق)
 // ============================================
 export const searchVideosByQuestion = async (question) => {
   try {
@@ -184,17 +345,14 @@ export const searchVideosByQuestion = async (question) => {
       .limit(20);
 
     if (error) throw error;
+    if (!videos || videos.length === 0) return [];
 
-    if (!videos || videos.length === 0) {
-      return [];
-    }
-
-    const questionWords = extractKeywords(question);
+    const questionWords = extractSmartKeywords(question, '');
     console.log('🔍 Question words:', questionWords);
 
     const ranked = videos.map(video => {
       const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
-      const videoWords = extractKeywords(videoText);
+      const videoWords = extractSmartKeywords(videoText, '');
       
       let matchCount = 0;
       let matchScore = 0;
@@ -214,7 +372,6 @@ export const searchVideosByQuestion = async (question) => {
     });
 
     ranked.sort((a, b) => b.score - a.score);
-
     return ranked.slice(0, 5).filter(v => v.score > 10);
 
   } catch (error) {
@@ -224,66 +381,16 @@ export const searchVideosByQuestion = async (question) => {
 };
 
 // ============================================
-// 8. توليد ردود ديناميكية
+// 10. Extract Smart Keywords (Export)
 // ============================================
-const generateDynamicResponse = (question, videos) => {
-  if (!videos || videos.length === 0) {
-    return {
-      text: '😕 I couldn\'t find any videos matching your question. Try using different keywords!\n\n💡 Examples:\n• "Math tutorials"\n• "Learn Python"\n• "Physics lessons"',
-      videos: []
-    };
-  }
-
-  const videoList = videos.map((v, i) => 
-    `${i + 1}. **${v.title || 'Untitled'}**\n   📺 ${v.channel_name || 'Unknown'}\n   👁️ ${v.views_count || 0} views`
-  ).join('\n\n');
-
-  return {
-    text: `🎬 I found these videos for you:\n\n${videoList}\n\n💡 Click on any video to watch it!`,
-    videos: videos
-  };
-};
+export { extractSmartKeywords as extractKeywords };
 
 // ============================================
-// 9. الدالة الرئيسية للـ Chatbot
-// ============================================
-export const getChatbotResponse = async (question, previousMessages = []) => {
-  // 1. البحث في قاعدة المعرفة المخصصة
-  const knowledgeMatch = searchKnowledgeBase(question);
-  if (knowledgeMatch) {
-    return {
-      text: knowledgeMatch.response,
-      videos: [],
-      source: 'knowledge'
-    };
-  }
-
-  // 2. البحث في الفيديوهات
-  const videos = await searchVideosByQuestion(question);
-  
-  if (videos && videos.length > 0) {
-    const response = generateDynamicResponse(question, videos);
-    return {
-      text: response.text,
-      videos: response.videos,
-      source: 'videos'
-    };
-  }
-
-  // 3. ردود افتراضية
-  return {
-    text: '🤔 I\'m not sure I understand. Could you rephrase your question?\n\n💡 Try asking:\n• "Show me math videos"\n• "Programming tutorials"\n• "Science lessons"',
-    videos: [],
-    source: 'fallback'
-  };
-};
-
-// ============================================
-// 10. تحليل المشاعر (Sentiment Analysis)
+// 11. تحليل المشاعر
 // ============================================
 export const analyzeSentiment = (text) => {
-  const positiveWords = ['good', 'great', 'awesome', 'excellent', 'amazing', 'love', 'like', 'thanks', 'thank you'];
-  const negativeWords = ['bad', 'terrible', 'awful', 'hate', 'dislike', 'useless', 'waste'];
+  const positiveWords = ['good', 'great', 'awesome', 'excellent', 'amazing', 'love', 'like', 'thanks', 'thank you', 'perfect'];
+  const negativeWords = ['bad', 'terrible', 'awful', 'hate', 'dislike', 'useless', 'waste', 'boring', 'confusing'];
   
   const words = text.toLowerCase().split(' ');
   let score = 0;
@@ -299,7 +406,7 @@ export const analyzeSentiment = (text) => {
 };
 
 // ============================================
-// 11. اقتراح مواضيع شائعة
+// 12. اقتراح مواضيع شائعة
 // ============================================
 export const getPopularTopics = () => {
   return [
@@ -309,5 +416,7 @@ export const getPopularTopics = () => {
     { icon: '🌍', name: 'Languages', query: 'learn english' },
     { icon: '📖', name: 'History', query: 'history lessons' },
     { icon: '🎨', name: 'Design', query: 'design tutorials' },
+    { icon: '🧪', name: 'Chemistry', query: 'chemistry experiments' },
+    { icon: '⚛️', name: 'Physics', query: 'physics explained' },
   ];
 };
