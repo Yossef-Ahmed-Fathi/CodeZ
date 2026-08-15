@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Feed from './components/Feed';
 import AdminPage from './pages/AdminPage';
 import AdminLogin from './components/AdminLogin';
 import VideoPage from './components/VideoPage';
-import Chatbot from './components/Chatbot';
 import VisitCounter from './components/VisitCounter';
-import { FaCommentDots } from 'react-icons/fa';
 
 const isAdminLoggedIn = () => {
   return localStorage.getItem('adminLoggedIn') === 'true';
@@ -20,24 +18,10 @@ const AdminRoute = ({ children }) => {
 };
 
 function App() {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
   return (
     <BrowserRouter>
       <VisitCounter />
       
-      {/* Brand Tagline */}
-      <div className="brand-tagline">🎓 Learn. Grow. CodeZ.</div>
-      
-      <button 
-        className="chatbot-toggle-btn"
-        onClick={() => setIsChatOpen(!isChatOpen)}
-      >
-        <FaCommentDots />
-      </button>
-
-      <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-
       <Routes>
         <Route path="/" element={<Feed />} />
         <Route path="/video/:id/:slug" element={<VideoPage />} />
