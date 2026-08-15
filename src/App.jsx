@@ -8,7 +8,7 @@ import Chatbot from './components/Chatbot';
 import VisitCounter from './components/VisitCounter';
 import { FaCommentDots } from 'react-icons/fa';
 
-const isAdminLoggedIn = () => {
+const isAdminLoggedIn = () => { 
   return localStorage.getItem('adminLoggedIn') === 'true';
 };
 
