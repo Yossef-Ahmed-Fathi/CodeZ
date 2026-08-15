@@ -16,13 +16,11 @@ const Feed = () => {
   const feedRef = useRef(null);
   const videoRefs = useRef([]);
 
-  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
+  const ADMIN_USER_ID = 'your-admin-user-id-here';
 
-  // ===== جلب كل الفيديوهات =====
   const fetchAllVideos = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. جلب كل الفيديوهات الموافق عليها
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
         .select('*')
@@ -36,7 +34,6 @@ const Feed = () => {
         return;
       }
 
-      // 2. جلب أسماء المستخدمين
       const userIds = [...new Set(videosData.map(v => v.user_id).filter(id => id))];
       let usersMap = {};
       if (userIds.length > 0) {
@@ -52,13 +49,11 @@ const Feed = () => {
         }
       }
 
-      // 3. دمج البيانات
       const mergedData = videosData.map(video => ({
         ...video,
         users: usersMap[video.user_id] || { username: 'Admin' }
       }));
 
-      // 4. ترتيب عشوائي
       const shuffled = mergedData.sort(() => Math.random() - 0.5);
       
       console.log('📹 Total videos loaded:', shuffled.length);
@@ -73,7 +68,6 @@ const Feed = () => {
     }
   }, []);
 
-  // التحميل الأولي
   useEffect(() => {
     fetchAllVideos();
   }, []);
@@ -125,7 +119,7 @@ const Feed = () => {
     }
   };
 
-  // ===== مراقبة الفيديو الظاهر =====
+  // ===== Visible Video Tracker =====
   useEffect(() => {
     if (loading || videos.length === 0) return;
 
@@ -165,7 +159,7 @@ const Feed = () => {
     };
   }, [videos, loading]);
 
-  // ===== عند انتهاء الفيديو =====
+  // ===== Video Ended =====
   const handleVideoEnded = (videoId) => {
     const nextIndex = Math.min(visibleIndex + 1, videos.length - 1);
     if (nextIndex !== visibleIndex) {
@@ -173,8 +167,77 @@ const Feed = () => {
     }
   };
 
+  // ===== FAQ Schema (Structured Data) =====
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is CodeZ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "CodeZ is an educational video platform that curates the best educational content from YouTube in a seamless, TikTok-like reel format."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I add a video?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Click the + button, paste a YouTube URL, and the system will auto-review it for educational quality."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is CodeZ free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, CodeZ is completely free to use."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does the chatbot help me?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The chatbot can search for educational videos based on your questions and recommend the most relevant ones."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I share videos with others?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! Each video has a unique URL you can share with anyone."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How are videos reviewed?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Videos are automatically reviewed using AI to detect educational content. Admins can also manually review them."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What types of videos are available?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We have educational videos in Math, Science, Programming, Languages, History, and more."
+        }
+      }
+    ]
+  };
+
   return (
     <div className="App" style={{ background: '#000', height: '100vh' }}>
+      {/* FAQ Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify(faqSchema)}
+      </script>
+
       <div className="floating-buttons">
         <button
           className="floating-btn floating-btn-admin"
@@ -239,6 +302,31 @@ const Feed = () => {
           ))}
         </div>
       )}
+
+      {/* FAQ Footer */}
+      <div className="faq-footer">
+        <div className="faq-container">
+          <h5 className="faq-title">❓ Frequently Asked Questions</h5>
+          <div className="faq-grid">
+            <div className="faq-item">
+              <strong>What is CodeZ?</strong>
+              <p>An educational video platform curating YouTube content in reel format.</p>
+            </div>
+            <div className="faq-item">
+              <strong>How do I add a video?</strong>
+              <p>Click the + button and paste a YouTube URL.</p>
+            </div>
+            <div className="faq-item">
+              <strong>Is it free?</strong>
+              <p>Yes, completely free.</p>
+            </div>
+            <div className="faq-item">
+              <strong>How does the chatbot work?</strong>
+              <p>Ask any question, it will find relevant educational videos.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
