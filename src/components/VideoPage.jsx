@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaShareAlt } from 'react-icons/fa';
 import { Spinner } from 'react-bootstrap';
+import ShareModal from './ShareModal';
 
 const VideoPage = () => {
   const { id, slug } = useParams();
@@ -10,6 +11,7 @@ const VideoPage = () => {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -66,9 +68,14 @@ const VideoPage = () => {
 
   return (
     <div className="video-page-container">
-      <button className="video-page-back" onClick={() => navigate('/')}>
-        <FaArrowLeft /> Back to Reels
-      </button>
+      <div className="video-page-header-buttons">
+        <button className="video-page-back" onClick={() => navigate('/')}>
+          <FaArrowLeft /> Back to Reels
+        </button>
+        <button className="video-page-share-btn" onClick={() => setShowShareModal(true)}>
+          <FaShareAlt /> Share
+        </button>
+      </div>
 
       <div className="video-page-player">
         <iframe
@@ -90,6 +97,13 @@ const VideoPage = () => {
           <span>{video.type === 'shorts' ? '📱 Shorts' : '🎬 Video'}</span>
         </div>
       </div>
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        videoId={id}
+        title={video.title}
+      />
     </div>
   );
 };
