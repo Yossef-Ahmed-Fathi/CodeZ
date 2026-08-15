@@ -9,7 +9,7 @@ const AdminLogin = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const ADMIN_PASSWORD = 'admin123';
+    const ADMIN_PASSWORD = 'DeciTeam#1234';
 
     if (password === ADMIN_PASSWORD) {
       localStorage.setItem('adminLoggedIn', 'true');
