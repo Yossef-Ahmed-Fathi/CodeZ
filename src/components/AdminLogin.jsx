@@ -1,22 +1,21 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaLock, FaUser } from "react-icons/fa";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaLock } from 'react-icons/fa';
 
 const AdminLogin = () => {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Admin password - hardcoded for simplicity (change to env later)
-    const ADMIN_PASSWORD = "DeciTeam#1234";
+    const ADMIN_PASSWORD = 'DeciTeam#1234';
 
     if (password === ADMIN_PASSWORD) {
-      localStorage.setItem("adminLoggedIn", "true");
-      navigate("/admin");
+      localStorage.setItem('adminLoggedIn', 'true');
+      navigate('/admin');
     } else {
-      setError("Invalid password");
+      setError('Invalid password');
     }
   };
 
@@ -25,9 +24,7 @@ const AdminLogin = () => {
       <div className="admin-login-card">
         <div className="text-center mb-4">
           <h2 className="text-white mb-2">🔐 Admin Login</h2>
-          <p className="text-muted small">
-            Enter your admin password to continue
-          </p>
+          <p className="text-muted small">Enter your admin password to continue</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -60,7 +57,7 @@ const AdminLogin = () => {
         <div className="text-center mt-3">
           <button
             className="btn btn-link text-light text-decoration-none small"
-            onClick={() => navigate("/")}
+            onClick={() => navigate('/')}
           >
             ← Back to home
           </button>
