@@ -203,7 +203,6 @@ export const processVideo = async (videoId) => {
     
     if (error) throw error;
     
-    // تحديث جدول الكلمات المفتاحية
     for (const keyword of keywords) {
       const { data: existing } = await supabase
         .from('keyword_index')
@@ -246,29 +245,23 @@ export const processVideo = async (videoId) => {
 // ============================================
 export const advancedSearch = async (query) => {
   try {
-    // 1. جلب كل الفيديوهات أولاً
     const allVideos = await fetchAllVideos();
     
     if (!allVideos || allVideos.length === 0) {
       return [];
     }
     
-    // 2. استخراج كلمات السؤال
     const queryWords = extractSmartKeywords(query);
     console.log('🔍 Query words:', queryWords);
     
-    // 3. ترتيب الفيديوهات حسب الأهمية
     const ranked = allVideos.map(video => {
-      // جلب الكلمات المفتاحية من الفيديو
       const videoKeywords = video.keywords || [];
       const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
       const extractedKeywords = extractSmartKeywords(videoText);
       
-      // حساب درجة التشابه
       let matchCount = 0;
       let matchScore = 0;
       
-      // 1. تطابق الكلمات المفتاحية المخزنة
       queryWords.forEach(qWord => {
         videoKeywords.forEach(kw => {
           if (kw.includes(qWord) || qWord.includes(kw)) {
@@ -278,7 +271,6 @@ export const advancedSearch = async (query) => {
         });
       });
       
-      // 2. تطابق الكلمات المستخرجة
       queryWords.forEach(qWord => {
         extractedKeywords.forEach(kw => {
           if (kw.includes(qWord) || qWord.includes(kw)) {
@@ -288,7 +280,6 @@ export const advancedSearch = async (query) => {
         });
       });
       
-      // 3. تطابق بسيط في النص
       queryWords.forEach(qWord => {
         if (videoText.toLowerCase().includes(qWord)) {
           matchCount += 1;
@@ -301,10 +292,7 @@ export const advancedSearch = async (query) => {
       return { ...video, score };
     });
     
-    // 4. ترتيب تنازلي
     ranked.sort((a, b) => b.score - a.score);
-    
-    // 5. إرجاع أفضل 5 نتائج (مع حد أدنى للدرجة)
     return ranked.slice(0, 5).filter(v => v.score > 1);
     
   } catch (error) {
@@ -352,10 +340,9 @@ export const searchVideosByQuestion = async (question) => {
 };
 
 // ============================================
-// 11. الردود المحسنة (مع قراءة كل الفيديوهات)
+// 11. الردود المحسنة (بدون مقدمات)
 // ============================================
 export const getEnhancedResponse = async (question, previousMessages = []) => {
-  // 1. البحث في قاعدة المعرفة
   const knowledgeMatch = searchKnowledgeBase(question);
   
   if (knowledgeMatch) {
@@ -367,17 +354,17 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
     };
   }
   
-  // 2. البحث المتقدم في كل الفيديوهات
   const videos = await advancedSearch(question);
   
   if (videos && videos.length > 0) {
+    // 🔥 عرض الفيديوهات مباشرة (من غير مقدمات)
     const videoList = videos.map((v, i) => {
       const keywords = (v.keywords || []).slice(0, 3).join(', ');
-      return `${i + 1}. **${v.title || 'Untitled'}**\n   📺 ${v.channel_name || 'Unknown'}\n   🔑 ${keywords || 'No keywords'}\n   👁️ ${v.views_count || 0} views`;
-    }).join('\n\n');
+      return `${i + 1}. **${v.title || 'Untitled'}** — ${v.channel_name || 'Unknown'} (${v.views_count || 0} views)`;
+    }).join('\n');
     
     return {
-      text: `🔍 I found these videos based on your question:\n\n${videoList}\n\n💡 Click on any video to watch it!`,
+      text: `${videoList}`,
       videos: videos,
       source: 'videos',
       keywords: extractSmartKeywords(question),
@@ -385,7 +372,7 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
   }
   
   return {
-    text: '🤔 I couldn\'t find anything matching your question. Try using different keywords!\n\n💡 Examples:\n• "Math tutorials"\n• "Learn Python"\n• "Physics lessons"',
+    text: '🤔 I couldn\'t find any videos matching your question. Try using different keywords!\n\n💡 Examples: "Math tutorials", "Learn Python", "Physics lessons"',
     videos: [],
     source: 'fallback',
     keywords: extractSmartKeywords(question),
@@ -398,19 +385,19 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
 const knowledgeBase = [
   {
     keywords: ['what is codez', 'about codez', 'platform'],
-    response: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format. We use smart AI to analyze and categorize videos!'
+    response: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format.'
   },
   {
     keywords: ['how to add video', 'upload', 'submit video'],
-    response: 'To add a video, click the + button on the home page, paste a YouTube URL, and our AI will automatically analyze it for educational quality.'
+    response: 'Click the + button, paste a YouTube URL, and our AI will automatically analyze it for educational quality.'
   },
   {
     keywords: ['how it works', 'algorithm', 'smart'],
-    response: 'Our AI analyzes video titles, descriptions, and tags to extract smart keywords. It then builds a knowledge graph to help you find exactly what you\'re looking for!'
+    response: 'Our AI extracts smart keywords from titles, descriptions, and tags to help you find exactly what you need.'
   },
   {
     keywords: ['free', 'cost', 'price', 'pay'],
-    response: 'Yes! CodeZ is completely free to use. No hidden costs, no subscriptions. Just educational content for everyone.'
+    response: 'Yes! CodeZ is completely free to use. No hidden costs, no subscriptions.'
   },
   {
     keywords: ['who are you', 'what are you', 'chatbot', 'edubot'],
@@ -418,7 +405,7 @@ const knowledgeBase = [
   },
   {
     keywords: ['thanks', 'thank you', 'great', 'awesome'],
-    response: 'You\'re welcome! 😊 I\'m constantly learning and improving. Keep asking questions! 🚀'
+    response: 'You\'re welcome! 😊 Keep asking questions! 🚀'
   },
   {
     keywords: ['hello', 'hi', 'hey', 'greetings'],
