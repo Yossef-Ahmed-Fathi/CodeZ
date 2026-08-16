@@ -13,11 +13,8 @@ const Feed = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const feedRef = useRef(null);
   const videoRefs = useRef([]);
-
-  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
   const fetchAllVideos = useCallback(async () => {
     setLoading(true);
@@ -67,11 +64,7 @@ const Feed = () => {
 
   useEffect(() => {
     fetchAllVideos();
-  }, [refreshTrigger]);
-
-  const handleRefresh = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
+  }, []);
 
   // Keyboard Controls
   useEffect(() => {
@@ -187,7 +180,7 @@ const Feed = () => {
           <div className="upload-modal">
             <UploadVideo onUpload={() => {
               setShowUpload(false);
-              handleRefresh();
+              // سيتعامل مع الـ refresh من الـ popup نفسه
             }} />
             <button
               className="btn btn-secondary w-100 mt-2"
