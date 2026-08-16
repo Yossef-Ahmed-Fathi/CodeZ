@@ -13,6 +13,7 @@ const Feed = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
   const [visibleIndex, setVisibleIndex] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const feedRef = useRef(null);
   const videoRefs = useRef([]);
 
@@ -55,11 +56,7 @@ const Feed = () => {
       }));
 
       const shuffled = mergedData.sort(() => Math.random() - 0.5);
-      
-      console.log('Total videos loaded:', shuffled.length);
-      
       setVideos(shuffled);
-
     } catch (error) {
       console.error('Error fetching videos:', error);
       setError('Failed to load videos');
@@ -70,8 +67,13 @@ const Feed = () => {
 
   useEffect(() => {
     fetchAllVideos();
-  }, []);
+  }, [refreshTrigger]);
 
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  // Keyboard Controls
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ') {
@@ -110,7 +112,6 @@ const Feed = () => {
   const scrollToIndex = (index) => {
     const container = feedRef.current;
     if (!container) return;
-
     const targetElement = container.children[index];
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: 'smooth' });
@@ -120,7 +121,6 @@ const Feed = () => {
 
   useEffect(() => {
     if (loading || videos.length === 0) return;
-
     const container = feedRef.current;
     if (!container) return;
 
@@ -151,7 +151,6 @@ const Feed = () => {
 
     container.addEventListener('scroll', handleScroll);
     setTimeout(handleScroll, 100);
-
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
@@ -187,8 +186,8 @@ const Feed = () => {
         <div className="position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-75 d-flex align-items-center justify-content-center p-3 z-2">
           <div className="upload-modal">
             <UploadVideo onUpload={() => {
-              fetchAllVideos();
               setShowUpload(false);
+              handleRefresh();
             }} />
             <button
               className="btn btn-secondary w-100 mt-2"
