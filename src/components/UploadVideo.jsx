@@ -2,14 +2,23 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { FaYoutube, FaUpload, FaSpinner } from 'react-icons/fa';
 import { autoReviewVideo, processVideo } from '../lib/chatbot';
+import CustomPopup from './CustomPopup';
 
 const UploadVideo = ({ onUpload }) => {
   const [youtubeLink, setYoutubeLink] = useState('');
   const [uploading, setUploading] = useState(false);
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
+  
+  // Popup state
+  const [popup, setPopup] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+    details: null,
+  });
 
-  // Admin ID fixed
   const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
   const extractYoutubeId = (url) => {
@@ -55,16 +64,26 @@ const UploadVideo = ({ onUpload }) => {
     }
   };
 
+  const showPopup = (type, title, message, details = null) => {
+    setPopup({
+      isOpen: true,
+      type,
+      title,
+      message,
+      details,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!youtubeLink) {
-      alert('Please enter a YouTube URL');
+      showPopup('error', 'Missing URL', 'Please enter a YouTube URL.');
       return;
     }
 
     const videoId = extractYoutubeId(youtubeLink);
     if (!videoId) {
-      alert('Invalid YouTube URL');
+      showPopup('error', 'Invalid URL', 'Please enter a valid YouTube URL.');
       return;
     }
 
@@ -74,6 +93,8 @@ const UploadVideo = ({ onUpload }) => {
     const channelName = videoInfo?.author || 'YouTube';
 
     setUploading(true);
+    showPopup('loading', 'Processing...', 'Our AI is analyzing your video.');
+
     try {
       const { data, error } = await supabase
         .from('videos')
@@ -94,33 +115,91 @@ const UploadVideo = ({ onUpload }) => {
       if (error) throw error;
 
       if (data && data[0]) {
+        // Run auto-review
         const { status, analysis } = await autoReviewVideo(videoId);
         
-        if (status === 'approved' || status === 'rejected') {
+        if (status === 'approved' && analysis) {
+          // Approved with keywords
+          const keywords = analysis.keywords || [];
+          const keywordList = keywords.slice(0, 8).join(', ');
+          
           await supabase
             .from('videos')
             .update({ 
-              status: status,
-              admin_notes: analysis?.isEducational 
-                ? 'Auto-approved (educational content)' 
-                : 'Auto-rejected (non-educational)'
+              status: 'approved',
+              admin_notes: `✅ Auto-approved: Found ${keywords.length} educational keywords (${keywordList})`
             })
             .eq('id', data[0].id);
+
+          showPopup(
+            'success',
+            '✅ Video Approved!',
+            `Your video has been automatically approved by our AI.`,
+            <div>
+              <p>🎯 <strong>Educational Keywords Found:</strong></p>
+              <p className="keyword-match">{keywords.length > 0 ? keywordList : 'General educational content'}</p>
+              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                The video was approved because it matches educational content criteria.
+              </p>
+            </div>
+          );
+
+        } else if (status === 'rejected') {
+          // Rejected
+          await supabase
+            .from('videos')
+            .update({ 
+              status: 'rejected',
+              admin_notes: '❌ Auto-rejected: No educational keywords found'
+            })
+            .eq('id', data[0].id);
+
+          showPopup(
+            'error',
+            '❌ Video Rejected',
+            `Your video was automatically rejected by our AI.`,
+            <div>
+              <p>🔍 <strong>Reason:</strong> No educational keywords were found.</p>
+              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                Try uploading a video with educational content (learning, tutorial, course, etc.)
+              </p>
+            </div>
+          );
+
+        } else {
+          // Pending - No keywords found
+          await supabase
+            .from('videos')
+            .update({ 
+              status: 'pending',
+              admin_notes: '⏳ Pending: Manual review needed (no keywords detected)'
+            })
+            .eq('id', data[0].id);
+
+          showPopup(
+            'info',
+            '⏳ Pending Review',
+            `Your video is pending manual review by an admin.`,
+            <div>
+              <p>🔄 <strong>Status:</strong> No educational keywords were automatically detected.</p>
+              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                An admin will review it shortly. You will be notified once reviewed.
+              </p>
+            </div>
+          );
         }
 
-        const processed = await processVideo(videoId);
-        if (processed) {
-          console.log('Video processed with keywords:', processed.keywords);
-        }
+        // Process keywords anyway
+        await processVideo(videoId);
       }
 
       setYoutubeLink('');
       setVideoInfo(null);
       onUpload?.();
-      alert('Video added! Auto-review and keyword extraction completed.');
+
     } catch (error) {
       console.error('Error:', error);
-      alert('Error: ' + error.message);
+      showPopup('error', 'Error', 'Something went wrong: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -137,73 +216,86 @@ const UploadVideo = ({ onUpload }) => {
   };
 
   return (
-    <div className="bg-dark p-4 rounded-4 text-white">
-      <h5 className="text-center mb-3">Add YouTube Video</h5>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">YouTube URL</label>
-          <div className="input-group">
-            <span className="input-group-text bg-secondary bg-opacity-25 border-0 text-white">
-              <FaYoutube className="text-danger" />
-            </span>
-            <input
-              type="url"
-              className="form-control bg-secondary bg-opacity-25 text-white border-0"
-              placeholder="https://www.youtube.com/watch?v=... or /shorts/..."
-              value={youtubeLink}
-              onChange={handleLinkChange}
-              required
-            />
+    <>
+      <div className="bg-dark p-4 rounded-4 text-white">
+        <h5 className="text-center mb-3">Add YouTube Video</h5>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label className="form-label">YouTube URL</label>
+            <div className="input-group">
+              <span className="input-group-text bg-secondary bg-opacity-25 border-0 text-white">
+                <FaYoutube className="text-danger" />
+              </span>
+              <input
+                type="url"
+                className="form-control bg-secondary bg-opacity-25 text-white border-0"
+                placeholder="https://www.youtube.com/watch?v=... or /shorts/..."
+                value={youtubeLink}
+                onChange={handleLinkChange}
+                required
+              />
+            </div>
+            <small className="text-muted d-block mt-1">
+              Video info will be fetched automatically from YouTube
+            </small>
           </div>
-          <small className="text-muted d-block mt-1">
-            Video info will be fetched automatically from YouTube
-          </small>
-        </div>
 
-        {fetchingInfo && (
-          <div className="mb-3 text-center py-2">
-            <FaSpinner className="fa-spin me-2" />
-            <span className="text-muted">Fetching video info...</span>
-          </div>
-        )}
+          {fetchingInfo && (
+            <div className="mb-3 text-center py-2">
+              <FaSpinner className="fa-spin me-2" />
+              <span className="text-muted">Fetching video info...</span>
+            </div>
+          )}
 
-        {videoInfo && !fetchingInfo && (
-          <div className="mb-3 bg-secondary bg-opacity-10 p-3 rounded-3">
-            <div className="d-flex gap-3">
-              {videoInfo.thumbnail && (
-                <img
-                  src={videoInfo.thumbnail}
-                  alt="Thumbnail"
-                  className="rounded"
-                  style={{ width: '80px', height: '60px', objectFit: 'cover' }}
-                />
-              )}
-              <div className="flex-grow-1">
-                <h6 className="mb-1 text-truncate">{videoInfo.title}</h6>
-                <small className="text-muted"> {videoInfo.author}</small>
+          {videoInfo && !fetchingInfo && (
+            <div className="mb-3 bg-secondary bg-opacity-10 p-3 rounded-3">
+              <div className="d-flex gap-3">
+                {videoInfo.thumbnail && (
+                  <img
+                    src={videoInfo.thumbnail}
+                    alt="Thumbnail"
+                    className="rounded"
+                    style={{ width: '80px', height: '60px', objectFit: 'cover' }}
+                  />
+                )}
+                <div className="flex-grow-1">
+                  <h6 className="mb-1 text-truncate">{videoInfo.title}</h6>
+                  <small className="text-muted"> {videoInfo.author}</small>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        <button
-          type="submit"
-          className="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-          disabled={uploading || fetchingInfo}
-        >
-          {uploading ? (
-            <>
-              <span className="spinner-border spinner-border-sm" />
-              Adding...
-            </>
-          ) : (
-            <>
-              <FaUpload /> Add Video
-            </>
           )}
-        </button>
-      </form>
-    </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+            disabled={uploading || fetchingInfo}
+          >
+            {uploading ? (
+              <>
+                <span className="spinner-border spinner-border-sm" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <FaUpload /> Add Video
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Custom Popup */}
+      <CustomPopup
+        isOpen={popup.isOpen}
+        onClose={() => setPopup({ ...popup, isOpen: false })}
+        type={popup.type}
+        title={popup.title}
+        message={popup.message}
+        details={popup.details}
+        duration={popup.type === 'loading' ? 0 : 6000}
+      />
+    </>
   );
 };
 
