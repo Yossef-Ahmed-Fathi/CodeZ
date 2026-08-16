@@ -4,12 +4,12 @@ import { FaYoutube, FaUpload, FaSpinner } from 'react-icons/fa';
 import { autoReviewVideo, processVideo } from '../lib/chatbot';
 
 const UploadVideo = ({ onUpload }) => {
-  const [youtubeLink, setYoutubeLink] = useState(''); 
+  const [youtubeLink, setYoutubeLink] = useState('');
   const [uploading, setUploading] = useState(false);
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
 
-  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
+  const ADMIN_USER_ID = 'your-admin-user-id-here';
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
@@ -93,7 +93,6 @@ const UploadVideo = ({ onUpload }) => {
       if (error) throw error;
 
       if (data && data[0]) {
-        // 1. مراجعة تلقائية
         const { status, analysis } = await autoReviewVideo(videoId);
         
         if (status === 'approved' || status === 'rejected') {
@@ -102,26 +101,25 @@ const UploadVideo = ({ onUpload }) => {
             .update({ 
               status: status,
               admin_notes: analysis?.isEducational 
-                ? '✅ Auto-approved (educational content)' 
-                : '❌ Auto-rejected (non-educational)'
+                ? 'Auto-approved (educational content)' 
+                : 'Auto-rejected (non-educational)'
             })
             .eq('id', data[0].id);
         }
 
-        // 2. معالجة الفيديو واستخراج الكلمات المفتاحية
         const processed = await processVideo(videoId);
         if (processed) {
-          console.log('✅ Video processed with keywords:', processed.keywords);
+          console.log('Video processed with keywords:', processed.keywords);
         }
       }
 
       setYoutubeLink('');
       setVideoInfo(null);
       onUpload?.();
-      alert('✅ Video added! Auto-review and keyword extraction completed.');
+      alert('Video added! Auto-review and keyword extraction completed.');
     } catch (error) {
       console.error('Error:', error);
-      alert('❌ Error: ' + error.message);
+      alert('Error: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -139,7 +137,7 @@ const UploadVideo = ({ onUpload }) => {
 
   return (
     <div className="bg-dark p-4 rounded-4 text-white">
-      <h5 className="text-center mb-3">📹 Add YouTube Video</h5>
+      <h5 className="text-center mb-3">Add YouTube Video</h5>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <label className="form-label">YouTube URL</label>
@@ -157,7 +155,7 @@ const UploadVideo = ({ onUpload }) => {
             />
           </div>
           <small className="text-muted d-block mt-1">
-            💡 Video will be automatically analyzed for keywords and summary
+            Video info will be fetched automatically from YouTube
           </small>
         </div>
 
@@ -181,7 +179,7 @@ const UploadVideo = ({ onUpload }) => {
               )}
               <div className="flex-grow-1">
                 <h6 className="mb-1 text-truncate">{videoInfo.title}</h6>
-                <small className="text-muted">📺 {videoInfo.author}</small>
+                <small className="text-muted"> {videoInfo.author}</small>
               </div>
             </div>
           </div>
