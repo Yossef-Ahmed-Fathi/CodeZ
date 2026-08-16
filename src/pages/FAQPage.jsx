@@ -6,9 +6,9 @@ const FAQPage = () => {
   const navigate = useNavigate();
 
    const faqs = [
-    { q: 'What is CodeZ?', a: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format.' },
+    { q: 'What is BrainThrive?', a: 'BrainThrive is an educational video platform that curates the best learning content from YouTube in a seamless reel format.' },
     { q: 'How do I add a video?', a: 'Click the + button on the home page and paste a YouTube URL. The system will auto-review it for educational quality.' },
-    { q: 'Is CodeZ free?', a: 'Yes, CodeZ is completely free to use.' },
+    { q: 'Is BrainThrive free?', a: 'Yes, BrainThrive is completely free to use.' },
     { q: 'How does the chatbot work?', a: 'Ask any question, and EduBot will find relevant educational videos for you.' },
     { q: 'Can I share videos?', a: 'Yes! Each video has a unique URL you can share with anyone.' },
     { q: 'How are videos reviewed?', a: 'Videos are automatically reviewed using AI to detect educational content. Admins can also manually review them.' },
