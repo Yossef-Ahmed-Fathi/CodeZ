@@ -47,6 +47,8 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <VisitCounter />
+        {/* Brand Tagline */}
+        <div className="brand-tagline">🧠 Learn. Grow. BrainThrive.</div>
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
