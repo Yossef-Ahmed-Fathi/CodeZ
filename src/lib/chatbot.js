@@ -1,7 +1,119 @@
 import { supabase } from './supabase';
 
 // ============================================
-// 1. تحليل المحتوى التعليمي
+// Video Categories
+// ============================================
+const videoCategories = {
+  math: {
+    keywords: ['math', 'mathematics', 'algebra', 'calculus', 'geometry', 'statistics', 'arithmetic', 'trigonometry', 'linear algebra', 'differential equations'],
+    topics: ['equations', 'formulas', 'numbers', 'graphs', 'functions', 'derivatives', 'integrals', 'matrices', 'vectors']
+  },
+  science: {
+    keywords: ['science', 'physics', 'chemistry', 'biology', 'astronomy', 'earth science', 'geology', 'ecology', 'genetics', 'molecular biology', 'quantum physics', 'thermodynamics'],
+    topics: ['experiments', 'lab', 'molecules', 'atoms', 'energy', 'force', 'motion', 'cells', 'DNA', 'evolution', 'climate', 'space', 'planets']
+  },
+  programming: {
+    keywords: ['programming', 'coding', 'python', 'javascript', 'react', 'java', 'c++', 'html', 'css', 'node', 'express', 'mongodb', 'sql', 'git', 'github', 'algorithm', 'data structure'],
+    topics: ['variables', 'loops', 'functions', 'classes', 'objects', 'arrays', 'strings', 'compiler', 'debugging', 'software', 'web development', 'app development']
+  },
+  languages: {
+    keywords: ['language', 'english', 'arabic', 'french', 'german', 'spanish', 'grammar', 'vocabulary', 'pronunciation', 'speaking', 'writing', 'reading', 'listening', 'translation'],
+    topics: ['verb tenses', 'conjugation', 'sentence structure', 'idioms', 'expressions', 'phrases']
+  },
+  history: {
+    keywords: ['history', 'ancient', 'civilization', 'world war', 'historical', 'kingdom', 'empire', 'revolution', 'renaissance', 'medieval', 'modern history'],
+    topics: ['wars', 'leaders', 'culture', 'society', 'art', 'architecture', 'inventions', 'timeline']
+  },
+  chess: {
+    keywords: ['chess', 'checkmate', 'grandmaster', 'opening', 'endgame', 'middlegame', 'pawn', 'rook', 'knight', 'bishop', 'queen', 'king'],
+    topics: ['strategy', 'tactics', 'defense', 'attack', 'tournament', 'rating', 'analysis']
+  },
+  rubik: {
+    keywords: ['rubik', 'cube', 'pyramid', 'puzzle', 'solve', 'twist', '3x3', '4x4', '5x5', '6x6', 'megaminx', 'speedcube'],
+    topics: ['algorithm', 'finger tricks', 'oll', 'pll', 'cfop', 'beginner method', 'speedcubing']
+  },
+  design: {
+    keywords: ['design', 'graphic', 'ui/ux', 'web design', 'photoshop', 'illustrator', 'figma', 'adobe', 'creative', 'typography', 'layout', 'branding', 'logo', 'poster'],
+    topics: ['color theory', 'composition', 'visual identity', 'mockup', 'prototyping', 'wireframe']
+  },
+  business: {
+    keywords: ['business', 'marketing', 'entrepreneur', 'finance', 'management', 'leadership', 'strategy', 'sales', 'investment', 'startup', 'economics'],
+    topics: ['planning', 'analysis', 'market', 'branding', 'advertising', 'negotiation', 'team building']
+  },
+  health: {
+    keywords: ['health', 'fitness', 'nutrition', 'exercise', 'mental health', 'wellness', 'diet', 'workout', 'yoga', 'meditation', 'anatomy'],
+    topics: ['strength', 'cardio', 'flexibility', 'protein', 'vitamins', 'stress', 'sleep', 'meditation']
+  }
+};
+
+// ============================================
+// Detect Video Category
+// ============================================
+const detectVideoCategory = (title, description, keywords) => {
+  const text = (title + ' ' + description + ' ' + (keywords || []).join(' ')).toLowerCase();
+  
+  let bestCategory = 'general';
+  let bestScore = 0;
+
+  Object.entries(videoCategories).forEach(([category, data]) => {
+    let score = 0;
+    data.keywords.forEach(kw => {
+      if (text.includes(kw)) score += 2;
+    });
+    data.topics.forEach(topic => {
+      if (text.includes(topic)) score += 3;
+    });
+    if (score > bestScore) {
+      bestScore = score;
+      bestCategory = category;
+    }
+  });
+
+  return bestScore > 0 ? bestCategory : 'general';
+};
+
+// ============================================
+// Detect Category from Query
+// ============================================
+const detectCategoryFromQuery = (query) => {
+  const queryLower = query.toLowerCase();
+  let bestCategory = 'general';
+  let bestScore = 0;
+
+  Object.entries(videoCategories).forEach(([category, data]) => {
+    data.keywords.forEach(kw => {
+      if (queryLower.includes(kw)) {
+        const score = kw.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestCategory = category;
+        }
+      }
+    });
+  });
+
+  return bestCategory;
+};
+
+// ============================================
+// Filter Videos by Category
+// ============================================
+const filterVideosByCategory = (videos, query) => {
+  const targetCategory = detectCategoryFromQuery(query);
+  console.log('Target category:', targetCategory);
+
+  const filtered = videos.filter(video => {
+    const text = (video.title + ' ' + video.description + ' ' + (video.keywords || []).join(' ')).toLowerCase();
+    const category = detectVideoCategory(video.title, video.description, video.keywords || []);
+    return category === targetCategory || targetCategory === 'general';
+  });
+
+  console.log('Filtered videos:', filtered.length);
+  return filtered.length > 0 ? filtered : videos;
+};
+
+// ============================================
+// Analyze Video Content
 // ============================================
 export const analyzeVideoContent = async (videoId) => {
   try {
@@ -30,7 +142,7 @@ export const analyzeVideoContent = async (videoId) => {
 };
 
 // ============================================
-// 2. اكتشاف المحتوى التعليمي
+// Detect Educational Content
 // ============================================
 const detectEducational = (keywords, title) => {
   const educationalWords = [
@@ -38,8 +150,7 @@ const detectEducational = (keywords, title) => {
     'training', 'school', 'college', 'university', 'teacher',
     'math', 'science', 'history', 'physics', 'chemistry', 'biology',
     'programming', 'coding', 'development', 'design', 'engineering',
-    'english', 'language', 'grammar', 'writing', 'reading',
-    'تعلم', 'درس', 'شرح', 'مدرسة', 'جامعة', 'تعليم', 'تدريس'
+    'english', 'language', 'grammar', 'writing', 'reading'
   ];
   
   const combinedText = keywords.join(' ') + ' ' + title.toLowerCase();
@@ -47,7 +158,7 @@ const detectEducational = (keywords, title) => {
 };
 
 // ============================================
-// 3. المراجعة التلقائية (Auto-Review)
+// Auto-Review Video
 // ============================================
 export const autoReviewVideo = async (videoId) => {
   try {
@@ -64,7 +175,7 @@ export const autoReviewVideo = async (videoId) => {
       .from('videos')
       .update({
         status: status,
-        admin_notes: analysis.isEducational ? '✅ Auto-approved (educational)' : '⏳ Pending review',
+        admin_notes: analysis.isEducational ? 'Auto-approved (educational)' : 'Pending review',
       })
       .eq('youtube_video_id', videoId);
 
@@ -78,7 +189,7 @@ export const autoReviewVideo = async (videoId) => {
 };
 
 // ============================================
-// 4. جلب كل الفيديوهات من قاعدة البيانات
+// Fetch All Videos
 // ============================================
 export const fetchAllVideos = async () => {
   try {
@@ -97,7 +208,7 @@ export const fetchAllVideos = async () => {
 };
 
 // ============================================
-// 5. جلب محتوى الفيديو بالكامل
+// Fetch Video Content
 // ============================================
 export const fetchVideoContent = async (videoId) => {
   try {
@@ -130,11 +241,11 @@ export const fetchVideoContent = async (videoId) => {
 };
 
 // ============================================
-// 6. استخراج الكلمات المفتاحية الذكية
+// Extract Smart Keywords
 // ============================================
 export const extractSmartKeywords = (text) => {
   const fullText = text.toLowerCase();
-  const words = fullText.match(/[a-z0-9\u0600-\u06FF]+/g) || [];
+  const words = fullText.match(/[a-z0-9]+/g) || [];
   
   const stopWords = [
     'the', 'and', 'or', 'for', 'to', 'of', 'in', 'on', 'at', 'with', 'without',
@@ -164,7 +275,7 @@ export const extractSmartKeywords = (text) => {
 };
 
 // ============================================
-// 7. توليد ملخص تلقائي
+// Generate Summary
 // ============================================
 export const generateSummary = (title, description, keywords) => {
   if (!description) return title;
@@ -173,11 +284,11 @@ export const generateSummary = (title, description, keywords) => {
   const shortDesc = words.slice(0, 30).join(' ') + (words.length > 30 ? '...' : '');
   const keywordStr = keywords.slice(0, 5).join(', ');
   
-  return `${shortDesc}\n\n📌 Keywords: ${keywordStr}`;
+  return `${shortDesc}\n\nKeywords: ${keywordStr}`;
 };
 
 // ============================================
-// 8. معالجة الفيديو (استخراج المحتوى والكلمات)
+// Process Video
 // ============================================
 export const processVideo = async (videoId) => {
   try {
@@ -241,7 +352,7 @@ export const processVideo = async (videoId) => {
 };
 
 // ============================================
-// 9. البحث المتقدم (قراءة كل الفيديوهات)
+// Advanced Search with Categories
 // ============================================
 export const advancedSearch = async (query) => {
   try {
@@ -251,10 +362,11 @@ export const advancedSearch = async (query) => {
       return [];
     }
     
+    const filteredByCategory = filterVideosByCategory(allVideos, query);
     const queryWords = extractSmartKeywords(query);
-    console.log('🔍 Query words:', queryWords);
+    console.log('Query words:', queryWords);
     
-    const ranked = allVideos.map(video => {
+    const ranked = filteredByCategory.map(video => {
       const videoKeywords = video.keywords || [];
       const videoText = (video.title || '') + ' ' + (video.description || '') + ' ' + (video.channel_name || '');
       const extractedKeywords = extractSmartKeywords(videoText);
@@ -287,6 +399,12 @@ export const advancedSearch = async (query) => {
         }
       });
       
+      const category = detectVideoCategory(video.title, video.description, videoKeywords);
+      const queryCategory = detectCategoryFromQuery(query);
+      if (category === queryCategory) {
+        matchScore += 10;
+      }
+      
       const score = matchCount > 0 ? (matchScore / Math.max(queryWords.length, 1)) : 0;
       
       return { ...video, score };
@@ -302,7 +420,7 @@ export const advancedSearch = async (query) => {
 };
 
 // ============================================
-// 10. البحث العادي
+// Search Videos by Question
 // ============================================
 export const searchVideosByQuestion = async (question) => {
   try {
@@ -340,43 +458,7 @@ export const searchVideosByQuestion = async (question) => {
 };
 
 // ============================================
-// 11. الردود المحسنة (مع المقدمة وفيديو فقط)
-// ============================================
-export const getEnhancedResponse = async (question, previousMessages = []) => {
-  const knowledgeMatch = searchKnowledgeBase(question);
-  
-  if (knowledgeMatch) {
-    return {
-      text: knowledgeMatch.response,
-      videos: [],
-      source: 'knowledge',
-      keywords: extractSmartKeywords(question),
-    };
-  }
-  
-  const videos = await advancedSearch(question);
-  
-  if (videos && videos.length > 0) {
-    
-    
-    return {
-      text: `🔍 I found these videos based on your question:\n\n💡 Click on any video to watch it!`,
-      videos: videos,
-      source: 'videos',
-      keywords: extractSmartKeywords(question),
-    };
-  }
-  
-  return {
-    text: '🤔 I couldn\'t find any videos matching your question. Try using different keywords!\n\n💡 Examples: "Math tutorials", "Learn Python", "Physics lessons"',
-    videos: [],
-    source: 'fallback',
-    keywords: extractSmartKeywords(question),
-  };
-};
-
-// ============================================
-// 12. قاعدة المعرفة
+// Knowledge Base
 // ============================================
 const knowledgeBase = [
   {
@@ -401,16 +483,56 @@ const knowledgeBase = [
   },
   {
     keywords: ['thanks', 'thank you', 'great', 'awesome'],
-    response: 'You\'re welcome! 😊 Keep asking questions! 🚀'
+    response: 'You\'re welcome! Keep asking questions!'
   },
   {
     keywords: ['hello', 'hi', 'hey', 'greetings'],
-    response: '👋 Hello! Welcome to CodeZ. I\'m EduBot, your AI educational assistant.'
+    response: 'Hello! Welcome to CodeZ. I\'m EduBot, your AI educational assistant.'
   },
+  {
+    keywords: ['math', 'mathematics', 'algebra', 'calculus', 'math tutorials'],
+    response: 'Here are some math videos for you:'
+  },
+  {
+    keywords: ['science', 'physics', 'chemistry', 'biology', 'science lessons'],
+    response: 'Here are some science videos for you:'
+  },
+  {
+    keywords: ['programming', 'coding', 'python', 'javascript', 'react', 'programming tutorials'],
+    response: 'Here are some programming videos for you:'
+  },
+  {
+    keywords: ['chess', 'checkmate', 'grandmaster'],
+    response: 'Here are some chess videos for you:'
+  },
+  {
+    keywords: ['rubik', 'cube', 'pyramid', 'solve'],
+    response: 'Here are some rubik\'s cube videos for you:'
+  },
+  {
+    keywords: ['history', 'ancient', 'civilization', 'world war'],
+    response: 'Here are some history videos for you:'
+  },
+  {
+    keywords: ['design', 'graphic', 'ui/ux', 'photoshop', 'figma'],
+    response: 'Here are some design videos for you:'
+  },
+  {
+    keywords: ['business', 'marketing', 'entrepreneur', 'finance'],
+    response: 'Here are some business videos for you:'
+  },
+  {
+    keywords: ['health', 'fitness', 'nutrition', 'exercise', 'wellness'],
+    response: 'Here are some health videos for you:'
+  },
+  {
+    keywords: ['languages', 'english', 'french', 'german', 'spanish', 'grammar'],
+    response: 'Here are some language learning videos for you:'
+  }
 ];
 
 // ============================================
-// 13. البحث في قاعدة المعرفة
+// Search Knowledge Base
 // ============================================
 const searchKnowledgeBase = (question) => {
   const words = extractSmartKeywords(question);
@@ -440,7 +562,45 @@ const searchKnowledgeBase = (question) => {
 };
 
 // ============================================
-// 14. تحليل المشاعر
+// Get Enhanced Response
+// ============================================
+export const getEnhancedResponse = async (question, previousMessages = []) => {
+  const knowledgeMatch = searchKnowledgeBase(question);
+  
+  if (knowledgeMatch) {
+    return {
+      text: knowledgeMatch.response,
+      videos: [],
+      source: 'knowledge',
+      keywords: extractSmartKeywords(question),
+    };
+  }
+  
+  const videos = await advancedSearch(question);
+  
+  if (videos && videos.length > 0) {
+    const videoList = videos.map((v, i) => 
+      `${i + 1}. **${v.title || 'Untitled'}**`
+    ).join('\n');
+    
+    return {
+      text: `I found these videos based on your question:\n\n${videoList}\n\nClick on any video to watch it!`,
+      videos: videos,
+      source: 'videos',
+      keywords: extractSmartKeywords(question),
+    };
+  }
+  
+  return {
+    text: 'I couldn\'t find any videos matching your question. Try using different keywords!\n\nExamples: "Math tutorials", "Learn Python", "Physics lessons"',
+    videos: [],
+    source: 'fallback',
+    keywords: extractSmartKeywords(question),
+  };
+};
+
+// ============================================
+// Analyze Sentiment
 // ============================================
 export const analyzeSentiment = (text) => {
   const positiveWords = ['good', 'great', 'awesome', 'excellent', 'amazing', 'love', 'like', 'thanks', 'thank you', 'perfect'];
@@ -460,7 +620,7 @@ export const analyzeSentiment = (text) => {
 };
 
 // ============================================
-// 15. اقتراح مواضيع شائعة
+// Get Popular Topics
 // ============================================
 export const getPopularTopics = () => {
   return [
@@ -472,5 +632,7 @@ export const getPopularTopics = () => {
     { icon: '🎨', name: 'Design', query: 'design tutorials' },
     { icon: '🧪', name: 'Chemistry', query: 'chemistry experiments' },
     { icon: '⚛️', name: 'Physics', query: 'physics explained' },
+    { icon: '♟️', name: 'Chess', query: 'chess tutorials' },
+    { icon: '🧩', name: 'Rubik\'s Cube', query: 'rubik cube tutorial' },
   ];
 };
