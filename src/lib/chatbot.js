@@ -1019,8 +1019,8 @@ export const searchVideosByQuestion = async (question) => {
 // ============================================
 const knowledgeBase = [
   {
-    keywords: ['what is codez', 'about codez', 'platform'],
-    response: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format.'
+    keywords: ['what is BrainThrive', 'about BrainThrive', 'platform', 'brainthrive'],
+    response: 'BrainThrive is an educational video platform that curates the best learning content from YouTube in a seamless reel format.'
   },
   {
     keywords: ['how to add video', 'upload', 'submit video'],
@@ -1032,7 +1032,7 @@ const knowledgeBase = [
   },
   {
     keywords: ['free', 'cost', 'price', 'pay'],
-    response: 'Yes! CodeZ is completely free to use. No hidden costs, no subscriptions.'
+    response: 'Yes! BrainThrive is completely free to use. No hidden costs, no subscriptions.'
   },
   {
     keywords: ['who are you', 'what are you', 'chatbot', 'edubot'],
@@ -1044,7 +1044,7 @@ const knowledgeBase = [
   },
   {
     keywords: ['hello', 'hi', 'hey', 'greetings'],
-    response: 'Hello! Welcome to CodeZ. I\'m EduBot, your AI educational assistant.'
+    response: 'Hello! Welcome to BrainThrive. I\'m EduBot, your AI educational assistant.'
   }
 ];
 
