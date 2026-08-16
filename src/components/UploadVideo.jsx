@@ -9,14 +9,13 @@ const UploadVideo = ({ onUpload }) => {
   const [uploading, setUploading] = useState(false);
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
-  
-  // Popup state
   const [popup, setPopup] = useState({
     isOpen: false,
     type: 'info',
     title: '',
     message: '',
     details: null,
+    duration: 5000,
   });
 
   const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
@@ -64,14 +63,23 @@ const UploadVideo = ({ onUpload }) => {
     }
   };
 
-  const showPopup = (type, title, message, details = null) => {
+  const showPopup = (type, title, message, details = null, duration = 5000) => {
     setPopup({
       isOpen: true,
       type,
       title,
       message,
       details,
+      duration,
     });
+  };
+
+  const closePopup = () => {
+    setPopup({ ...popup, isOpen: false });
+    // بعد إغلاق البوب اب، نستدعي onUpload عشان نحدث الفيديو
+    if (onUpload) {
+      onUpload();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -93,7 +101,7 @@ const UploadVideo = ({ onUpload }) => {
     const channelName = videoInfo?.author || 'YouTube';
 
     setUploading(true);
-    showPopup('loading', 'Processing...', 'Our AI is analyzing your video.');
+    showPopup('loading', 'Processing...', 'Our AI is analyzing your video.', null, 0);
 
     try {
       const { data, error } = await supabase
@@ -115,11 +123,9 @@ const UploadVideo = ({ onUpload }) => {
       if (error) throw error;
 
       if (data && data[0]) {
-        // Run auto-review
         const { status, analysis } = await autoReviewVideo(videoId);
         
         if (status === 'approved' && analysis) {
-          // Approved with keywords
           const keywords = analysis.keywords || [];
           const keywordList = keywords.slice(0, 8).join(', ');
           
@@ -141,11 +147,11 @@ const UploadVideo = ({ onUpload }) => {
               <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
                 The video was approved because it matches educational content criteria.
               </p>
-            </div>
+            </div>,
+            6000
           );
 
         } else if (status === 'rejected') {
-          // Rejected
           await supabase
             .from('videos')
             .update({ 
@@ -163,11 +169,11 @@ const UploadVideo = ({ onUpload }) => {
               <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
                 Try uploading a video with educational content (learning, tutorial, course, etc.)
               </p>
-            </div>
+            </div>,
+            6000
           );
 
         } else {
-          // Pending - No keywords found
           await supabase
             .from('videos')
             .update({ 
@@ -183,23 +189,22 @@ const UploadVideo = ({ onUpload }) => {
             <div>
               <p>🔄 <strong>Status:</strong> No educational keywords were automatically detected.</p>
               <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
-                An admin will review it shortly. You will be notified once reviewed.
+                An admin will review it shortly.
               </p>
-            </div>
+            </div>,
+            6000
           );
         }
 
-        // Process keywords anyway
         await processVideo(videoId);
       }
 
       setYoutubeLink('');
       setVideoInfo(null);
-      onUpload?.();
 
     } catch (error) {
       console.error('Error:', error);
-      showPopup('error', 'Error', 'Something went wrong: ' + error.message);
+      showPopup('error', 'Error', 'Something went wrong: ' + error.message, null, 5000);
     } finally {
       setUploading(false);
     }
@@ -285,15 +290,14 @@ const UploadVideo = ({ onUpload }) => {
         </form>
       </div>
 
-      {/* Custom Popup */}
       <CustomPopup
         isOpen={popup.isOpen}
-        onClose={() => setPopup({ ...popup, isOpen: false })}
+        onClose={closePopup}
         type={popup.type}
         title={popup.title}
         message={popup.message}
         details={popup.details}
-        duration={popup.type === 'loading' ? 0 : 6000}
+        duration={popup.duration}
       />
     </>
   );
