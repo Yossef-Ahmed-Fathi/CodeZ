@@ -5,7 +5,7 @@ import { FaHome } from 'react-icons/fa';
 const FAQPage = () => {
   const navigate = useNavigate();
 
-  const faqs = [
+   const faqs = [
     { q: 'What is CodeZ?', a: 'CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format.' },
     { q: 'How do I add a video?', a: 'Click the + button on the home page and paste a YouTube URL. The system will auto-review it for educational quality.' },
     { q: 'Is CodeZ free?', a: 'Yes, CodeZ is completely free to use.' },
