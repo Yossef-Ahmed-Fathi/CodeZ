@@ -29,7 +29,7 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
   const [showControls, setShowControls] = useState(false);
 
   const username = video.users?.username || 'user';
-  const userId = 'your-admin-user-id-here';
+  const userId = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
   useImperativeHandle(ref, () => ({
     handleTogglePlay: () => {
