@@ -134,7 +134,7 @@ const AdminPage = () => {
       const { error } = await supabase
         .from('videos')
         .insert({
-          user_id: 'your-admin-user-id-here',
+          user_id: '681dca92-c909-4db1-8f01-0f9d014e7488',
           youtube_video_id: videoId,
           status: 'approved',
           type: newShortType,
