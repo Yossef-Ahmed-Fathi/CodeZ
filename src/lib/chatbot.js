@@ -631,9 +631,7 @@ export const getEnhancedResponse = async (question, previousMessages = []) => {
   const videos = await advancedSearch(question);
   
   if (videos && videos.length > 0) {
-    const videoList = videos.map((v, i) => 
-      `${i + 1}. **${v.title || 'Untitled'}**`
-    ).join('\n');
+    
     
     return {
       text: `I found these videos based on your question:\n\n${videoList}\n\nClick on any video to watch it!`,
@@ -671,20 +669,3 @@ export const analyzeSentiment = (text) => {
   return 'neutral';
 };
 
-// ============================================
-// Get Popular Topics (for UI)
-// ============================================
-export const getPopularTopics = () => {
-  return [
-    { icon: '📐', name: 'Mathematics', query: 'math tutorials' },
-    { icon: '🔬', name: 'Science', query: 'science lessons' },
-    { icon: '💻', name: 'Programming', query: 'programming tutorials' },
-    { icon: '🌍', name: 'Languages', query: 'learn english' },
-    { icon: '📖', name: 'History', query: 'history lessons' },
-    { icon: '🎨', name: 'Design', query: 'design tutorials' },
-    { icon: '🧪', name: 'Chemistry', query: 'chemistry experiments' },
-    { icon: '⚛️', name: 'Physics', query: 'physics explained' },
-    { icon: '♟️', name: 'Chess', query: 'chess tutorials' },
-    { icon: '🧩', name: 'Rubik\'s Cube', query: 'rubik cube tutorial' },
-  ];
-};
