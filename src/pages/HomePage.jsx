@@ -18,7 +18,7 @@ const HomePage = () => {
   const feedRef = useRef(null);
   const videoRefs = useRef([]);
 
-  const ADMIN_USER_ID = 'your-admin-user-id-here';
+  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
   const fetchAllVideos = useCallback(async () => {
     setLoading(true);
