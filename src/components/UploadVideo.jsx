@@ -15,7 +15,7 @@ const UploadVideo = ({ onUpload }) => {
     title: '',
     message: '',
     details: null,
-    duration: 5000,
+    duration: 8000, // 🔥 زيادة الوقت الافتراضي
   });
 
   const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
@@ -63,35 +63,39 @@ const UploadVideo = ({ onUpload }) => {
     }
   };
 
-  const showPopup = (type, title, message, details = null, duration = 5000) => {
+  const showPopup = (type, title, message, details = null, duration = 10000) => {
     setPopup({
       isOpen: true,
       type,
       title,
       message,
       details,
-      duration,
+      duration: duration || 10000, // 🔥 10 ثواني افتراضي
     });
   };
 
   const closePopup = () => {
     setPopup({ ...popup, isOpen: false });
-    // بعد إغلاق البوب اب، نستدعي onUpload عشان نحدث الفيديو
+    // 🔥 ريفريش الصفحة بعد إغلاق البوب اب
     if (onUpload) {
       onUpload();
     }
+    // 🔥 إعادة تحميل الصفحة بعد 500ms عشان يظهر الفيديو الجديد
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!youtubeLink) {
-      showPopup('error', 'Missing URL', 'Please enter a YouTube URL.');
+      showPopup('error', 'Missing URL', 'Please enter a YouTube URL.', null, 5000);
       return;
     }
 
     const videoId = extractYoutubeId(youtubeLink);
     if (!videoId) {
-      showPopup('error', 'Invalid URL', 'Please enter a valid YouTube URL.');
+      showPopup('error', 'Invalid URL', 'Please enter a valid YouTube URL.', null, 5000);
       return;
     }
 
@@ -148,7 +152,7 @@ const UploadVideo = ({ onUpload }) => {
                 The video was approved because it matches educational content criteria.
               </p>
             </div>,
-            6000
+            12000 // 🔥 12 ثانية
           );
 
         } else if (status === 'rejected') {
@@ -170,7 +174,7 @@ const UploadVideo = ({ onUpload }) => {
                 Try uploading a video with educational content (learning, tutorial, course, etc.)
               </p>
             </div>,
-            6000
+            10000 // 🔥 10 ثانية
           );
 
         } else {
@@ -192,7 +196,7 @@ const UploadVideo = ({ onUpload }) => {
                 An admin will review it shortly.
               </p>
             </div>,
-            6000
+            10000 // 🔥 10 ثانية
           );
         }
 
@@ -204,7 +208,7 @@ const UploadVideo = ({ onUpload }) => {
 
     } catch (error) {
       console.error('Error:', error);
-      showPopup('error', 'Error', 'Something went wrong: ' + error.message, null, 5000);
+      showPopup('error', 'Error', 'Something went wrong: ' + error.message, null, 8000);
     } finally {
       setUploading(false);
     }
