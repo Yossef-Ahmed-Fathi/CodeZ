@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaCog, FaHome, FaQuestionCircle, FaCommentDots, FaUser } from 'react-icons/fa';
+import { FaPlus, FaCog } from 'react-icons/fa';
 import YoutubeReel from './YoutubeReel';
 import UploadVideo from './UploadVideo';
 import { Spinner } from 'react-bootstrap';
@@ -13,11 +13,10 @@ const Feed = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const feedRef = useRef(null);
   const videoRefs = useRef([]);
 
-  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
+  const ADMIN_USER_ID = 'your-admin-user-id-here';
 
   const fetchAllVideos = useCallback(async () => {
     setLoading(true);
@@ -57,7 +56,7 @@ const Feed = () => {
 
       const shuffled = mergedData.sort(() => Math.random() - 0.5);
       
-      console.log('📹 Total videos loaded:', shuffled.length);
+      console.log('Total videos loaded:', shuffled.length);
       
       setVideos(shuffled);
 
@@ -73,7 +72,6 @@ const Feed = () => {
     fetchAllVideos();
   }, []);
 
-  // ===== Keyboard Controls =====
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ') {
@@ -120,7 +118,6 @@ const Feed = () => {
     }
   };
 
-  // ===== Visible Video Tracker =====
   useEffect(() => {
     if (loading || videos.length === 0) return;
 
@@ -160,7 +157,6 @@ const Feed = () => {
     };
   }, [videos, loading]);
 
-  // ===== Video Ended =====
   const handleVideoEnded = (videoId) => {
     const nextIndex = Math.min(visibleIndex + 1, videos.length - 1);
     if (nextIndex !== visibleIndex) {
@@ -170,7 +166,6 @@ const Feed = () => {
 
   return (
     <div className="App" style={{ background: '#000', height: '100vh' }}>
-      {/* Floating Buttons (Admin & Add) */}
       <div className="floating-buttons">
         <button
           className="floating-btn floating-btn-admin"
@@ -235,124 +230,6 @@ const Feed = () => {
           ))}
         </div>
       )}
-
-      {/* ===== FOOTER MENU ===== */}
-      <div className="footer-menu">
-        <div className="footer-menu-container">
-          <button 
-            className="footer-menu-item active"
-            onClick={() => navigate('/')}
-          >
-            <FaHome />
-            <span>Home</span>
-          </button>
-          
-          <button 
-            className="footer-menu-item"
-            onClick={() => {
-              // Scroll to FAQ section (or navigate)
-              const faqElement = document.querySelector('.faq-footer');
-              if (faqElement) {
-                faqElement.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-          >
-            <FaQuestionCircle />
-            <span>FAQ</span>
-          </button>
-          
-          <button 
-            className="footer-menu-item"
-            onClick={() => setIsChatOpen(!isChatOpen)}
-          >
-            <FaCommentDots />
-            <span>Chatbot</span>
-          </button>
-          
-          <button 
-            className="footer-menu-item"
-            onClick={() => navigate('/account')}
-          >
-            <FaUser />
-            <span>Account</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ===== Chatbot Modal ===== */}
-      {isChatOpen && (
-        <div className="chatbot-overlay" onClick={() => setIsChatOpen(false)}>
-          <div className="chatbot-container" onClick={(e) => e.stopPropagation()}>
-            <div className="chatbot-header">
-              <div className="chatbot-header-info">
-                <FaCommentDots className="chatbot-icon" />
-                <div>
-                  <h6>🎓 EduBot</h6>
-                  <small>Ask me anything!</small>
-                </div>
-              </div>
-              <button className="chatbot-close" onClick={() => setIsChatOpen(false)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="chatbot-messages">
-              <div className="chatbot-message bot">
-                <div className="chatbot-avatar"><FaUser /></div>
-                <div className="chatbot-bubble">
-                  <div className="chatbot-text">👋 Hi! I'm EduBot. Ask me anything about educational videos!</div>
-                </div>
-              </div>
-              <div className="chatbot-message user">
-                <div className="chatbot-avatar"><FaUser /></div>
-                <div className="chatbot-bubble">
-                  <div className="chatbot-text">What is CodeZ?</div>
-                </div>
-              </div>
-              <div className="chatbot-message bot">
-                <div className="chatbot-avatar"><FaUser /></div>
-                <div className="chatbot-bubble">
-                  <div className="chatbot-text">CodeZ is an educational video platform that curates the best learning content from YouTube in a seamless reel format!</div>
-                </div>
-              </div>
-            </div>
-            <form className="chatbot-input-form" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="text"
-                className="chatbot-input"
-                placeholder="Ask about any topic..."
-              />
-              <button type="submit" className="chatbot-send-btn">
-                <FaPaperPlane />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===== FAQ Footer ===== */}
-      <div className="faq-footer">
-        <div className="faq-container">
-          <h5 className="faq-title">❓ Frequently Asked Questions</h5>
-          <div className="faq-grid">
-            <div className="faq-item">
-              <strong>What is CodeZ?</strong>
-              <p>An educational video platform curating YouTube content in reel format.</p>
-            </div>
-            <div className="faq-item">
-              <strong>How do I add a video?</strong>
-              <p>Click the + button and paste a YouTube URL.</p>
-            </div>
-            <div className="faq-item">
-              <strong>Is it free?</strong>
-              <p>Yes, completely free.</p>
-            </div>
-            <div className="faq-item">
-              <strong>How does the chatbot work?</strong>
-              <p>Ask any question, it will find relevant educational videos.</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
