@@ -22,11 +22,10 @@ const ChatbotPage = () => {
       {
         id: 1,
         sender: 'bot',
-        text: '👋 Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\n💡 Try asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"\n\nOr click on a topic below! 👇'
+        text: 'Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\nTry asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"\n\nOr click on a topic below!'
       }
     ]);
     
-    // 🔥 Auto-focus بعد تحميل الصفحة
     setTimeout(() => {
       inputRef.current?.focus();
     }, 500);
@@ -59,7 +58,6 @@ const ChatbotPage = () => {
       
       setMessages(prev => [...prev, botMessage]);
 
-      // 🔥 Auto-focus بعد الرد
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
@@ -69,11 +67,10 @@ const ChatbotPage = () => {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         sender: 'bot',
-        text: '❌ Sorry, I had trouble processing your request. Please try again.',
+        text: 'Sorry, I had trouble processing your request. Please try again.',
         videos: [],
       }]);
       
-      // 🔥 Auto-focus حتى لو في خطأ
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
@@ -103,7 +100,7 @@ const ChatbotPage = () => {
         </button>
 
         <div className="chatbot-page-header">
-          <h1 className="chatbot-page-title">🤖 EduBot</h1>
+          <h1 className="chatbot-page-title">EduBot</h1>
           <p className="chatbot-page-subtitle">Your personal educational video assistant</p>
         </div>
 
@@ -136,7 +133,7 @@ const ChatbotPage = () => {
                   </div>
                 )}
                 {msg.sentiment && msg.sentiment === 'positive' && (
-                  <div className="chatbot-page-sentiment positive">😊 Glad you liked that!</div>
+                  <div className="chatbot-page-sentiment positive">Glad you liked that!</div>
                 )}
               </div>
             </div>
