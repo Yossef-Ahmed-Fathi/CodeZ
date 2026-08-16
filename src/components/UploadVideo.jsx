@@ -9,7 +9,7 @@ const UploadVideo = ({ onUpload }) => {
   const [fetchingInfo, setFetchingInfo] = useState(false);
   const [videoInfo, setVideoInfo] = useState(null);
 
-  const ADMIN_USER_ID = 'your-admin-user-id-here';
+  const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
 
   const extractYoutubeId = (url) => {
     if (!url) return null;
