@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHome, FaPaperPlane, FaRobot, FaUser, FaLightbulb } from 'react-icons/fa';
-import { getEnhancedResponse, getPopularTopics, analyzeSentiment } from '../lib/chatbot';
+import { FaHome, FaPaperPlane, FaRobot, FaUser } from 'react-icons/fa';
+import { getEnhancedResponse, analyzeSentiment } from '../lib/chatbot';
 
 const ChatbotPage = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [popularTopics, setPopularTopics] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -17,12 +16,11 @@ const ChatbotPage = () => {
   }, [messages]);
 
   useEffect(() => {
-    setPopularTopics(getPopularTopics());
     setMessages([
       {
         id: 1,
         sender: 'bot',
-        text: 'Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\nTry asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"\n\nOr click on a topic below!'
+        text: 'Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\nTry asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"'
       }
     ]);
     
@@ -77,14 +75,6 @@ const ChatbotPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickTopic = (query) => {
-    setInput(query);
-    setTimeout(() => {
-      const event = new Event('submit', { bubbles: true });
-      document.querySelector('.chatbot-page-input-form')?.dispatchEvent(event);
-    }, 100);
   };
 
   const handleVideoClick = (video) => {
@@ -151,21 +141,6 @@ const ChatbotPage = () => {
           )}
           
           <div ref={messagesEndRef} />
-        </div>
-
-        <div className="chatbot-page-topics">
-          <span className="chatbot-page-topics-label">
-            <FaLightbulb /> Popular topics:
-          </span>
-          {popularTopics.map((topic, index) => (
-            <button
-              key={index}
-              className="chatbot-page-topic-btn"
-              onClick={() => handleQuickTopic(topic.query)}
-            >
-              {topic.icon} {topic.name}
-            </button>
-          ))}
         </div>
 
         <form className="chatbot-page-input-form" onSubmit={handleSendMessage}>
