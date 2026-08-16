@@ -1,7 +1,7 @@
 {
-  "name": "CodeZ - Educational Reels",
-  "short_name": "CodeZ",
-  "description": "Educational video platform",
+  "name": "BrainThrive - Educational Reels",
+  "short_name": "BrainThrive",
+  "description": "Curated educational videos from YouTube in a seamless reel format",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
