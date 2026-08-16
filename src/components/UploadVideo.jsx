@@ -15,7 +15,6 @@ const UploadVideo = ({ onUpload }) => {
     title: '',
     message: '',
     details: null,
-    duration: 8000, // 🔥 زيادة الوقت الافتراضي
   });
 
   const ADMIN_USER_ID = '681dca92-c909-4db1-8f01-0f9d014e7488';
@@ -63,39 +62,37 @@ const UploadVideo = ({ onUpload }) => {
     }
   };
 
-  const showPopup = (type, title, message, details = null, duration = 10000) => {
+  const showPopup = (type, title, message, details = null) => {
     setPopup({
       isOpen: true,
       type,
       title,
       message,
       details,
-      duration: duration || 10000, // 🔥 10 ثواني افتراضي
     });
   };
 
   const closePopup = () => {
     setPopup({ ...popup, isOpen: false });
-    // 🔥 ريفريش الصفحة بعد إغلاق البوب اب
+    // 🔥 Refresh after user clicks "Got it"
     if (onUpload) {
       onUpload();
     }
-    // 🔥 إعادة تحميل الصفحة بعد 500ms عشان يظهر الفيديو الجديد
     setTimeout(() => {
       window.location.reload();
-    }, 500);
+    }, 300);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!youtubeLink) {
-      showPopup('error', 'Missing URL', 'Please enter a YouTube URL.', null, 5000);
+      showPopup('error', 'Missing URL', 'Please enter a YouTube URL.');
       return;
     }
 
     const videoId = extractYoutubeId(youtubeLink);
     if (!videoId) {
-      showPopup('error', 'Invalid URL', 'Please enter a valid YouTube URL.', null, 5000);
+      showPopup('error', 'Invalid URL', 'Please enter a valid YouTube URL.');
       return;
     }
 
@@ -105,7 +102,7 @@ const UploadVideo = ({ onUpload }) => {
     const channelName = videoInfo?.author || 'YouTube';
 
     setUploading(true);
-    showPopup('loading', 'Processing...', 'Our AI is analyzing your video.', null, 0);
+    showPopup('loading', 'Processing...', 'Our AI is analyzing your video.');
 
     try {
       const { data, error } = await supabase
@@ -151,8 +148,7 @@ const UploadVideo = ({ onUpload }) => {
               <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
                 The video was approved because it matches educational content criteria.
               </p>
-            </div>,
-            12000 // 🔥 12 ثانية
+            </div>
           );
 
         } else if (status === 'rejected') {
@@ -173,8 +169,7 @@ const UploadVideo = ({ onUpload }) => {
               <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
                 Try uploading a video with educational content (learning, tutorial, course, etc.)
               </p>
-            </div>,
-            10000 // 🔥 10 ثانية
+            </div>
           );
 
         } else {
@@ -195,8 +190,7 @@ const UploadVideo = ({ onUpload }) => {
               <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
                 An admin will review it shortly.
               </p>
-            </div>,
-            10000 // 🔥 10 ثانية
+            </div>
           );
         }
 
@@ -208,7 +202,7 @@ const UploadVideo = ({ onUpload }) => {
 
     } catch (error) {
       console.error('Error:', error);
-      showPopup('error', 'Error', 'Something went wrong: ' + error.message, null, 8000);
+      showPopup('error', 'Error', 'Something went wrong: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -301,7 +295,6 @@ const UploadVideo = ({ onUpload }) => {
         title={popup.title}
         message={popup.message}
         details={popup.details}
-        duration={popup.duration}
       />
     </>
   );
