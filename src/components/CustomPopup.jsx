@@ -1,16 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { FaCheckCircle, FaTimesCircle, FaInfoCircle, FaSpinner } from 'react-icons/fa';
 
-const CustomPopup = ({ isOpen, onClose, type, title, message, details, duration = 4000 }) => {
-  useEffect(() => {
-    if (isOpen && duration > 0) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, duration, onClose]);
-
+const CustomPopup = ({ isOpen, onClose, type, title, message, details }) => {
   if (!isOpen) return null;
 
   const icons = {
@@ -41,7 +32,7 @@ const CustomPopup = ({ isOpen, onClose, type, title, message, details, duration 
           </div>
         )}
         <button className="popup-btn" onClick={onClose}>
-          Got it
+          {type === 'loading' ? 'Processing...' : 'Got it'}
         </button>
       </div>
     </div>
