@@ -20,7 +20,7 @@ const ChatbotPage = () => {
       {
         id: 1,
         sender: 'bot',
-        text: 'Hi! I\'m **EduBot**! 🎓\n\nI can help you find educational videos on any topic.\n\nTry asking me:\n• "Show me math tutorials"\n• "Learn Python"\n• "Physics lessons"'
+        text: 'Hi! I\'m EduBot! 🎓\n\nI can help you find educational videos on any topic.'
       }
     ]);
     
