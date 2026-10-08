@@ -108,8 +108,11 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     const recordView = async () => {
       try {
         await supabase
-          .from('views')
-          .insert({ video_id: video.id, user_id: userId });
+  .from('views')
+  .upsert(
+    { video_id: video.id, user_id: userId },
+    { onConflict: 'user_id,video_id', ignoreDuplicates: true }
+  );
         
         const newViewsCount = viewsCount + 1;
         setViewsCount(newViewsCount);
