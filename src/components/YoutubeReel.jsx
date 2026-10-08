@@ -51,11 +51,11 @@ const YoutubeReel = forwardRef(({ video, onEnded, isVisible }, ref) => {
     const checkLike = async () => {
       try {
         const { data } = await supabase
-          .from('likes')
-          .select('*')
-          .eq('video_id', video.id)
-          .eq('user_id', userId)
-          .single();
+  .from('likes')
+  .select('*')
+  .eq('video_id', video.id)
+  .eq('user_id', userId)
+  .maybeSingle();
         setIsLiked(!!data);
       } catch (error) {}
     };
